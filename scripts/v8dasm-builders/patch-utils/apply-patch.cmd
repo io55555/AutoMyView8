@@ -70,7 +70,6 @@ echo.
 
 REM 第0级：强制重置到干净状态
 call :do_reset
-if errorlevel 1 goto :all_failed
 
 REM 检查 patch 是否已经应用（反向检查）
 echo [检查] 检测 patch 是否已经应用...
@@ -113,7 +112,6 @@ echo. >> "%LOG_FILE%"
 
 REM 重置后再试第2级
 call :do_reset
-if errorlevel 1 goto :all_failed
 
 REM 第2级：git apply 三向合并
 echo [第2级] 尝试使用 git apply 三向合并...
@@ -140,7 +138,6 @@ echo. >> "%LOG_FILE%"
 
 REM 重置后再试第3级
 call :do_reset
-if errorlevel 1 goto :all_failed
 
 REM 第3级：git apply --ignore-whitespace
 echo [第3级] 尝试使用 git apply --ignore-whitespace...
@@ -161,7 +158,6 @@ echo. >> "%LOG_FILE%"
 
 REM 重置后再试第4级
 call :do_reset
-if errorlevel 1 goto :all_failed
 
 REM 第4级：语义化替换（Python 脚本）
 echo [第4级] 尝试使用语义化替换...
@@ -225,33 +221,37 @@ if /i "%ABORT_ON_FAILURE%"=="true" (
 :do_reset
 echo [第0级] 重置 V8 仓库到干净状态...
 echo [第0级] 重置 V8 仓库到干净状态... >> "%LOG_FILE%"
-pushd "%V8_DIR%" >nul 2>&1
-if errorlevel 1 (
+
+pushd "%V8_DIR%" >nul 2>&1 || (
     echo [RESET] 无法进入 V8 目录: %V8_DIR%
     echo [RESET] 无法进入 V8 目录: %V8_DIR% >> "%LOG_FILE%"
-    exit /b 1
+    exit /b 0
 )
 
-git diff --quiet >nul 2>&1
+git rev-parse --is-inside-work-tree >nul 2>&1 || (
+    echo [RESET] 非 git 仓库，跳过重置
+    echo [RESET] 非 git 仓库，跳过重置 >> "%LOG_FILE%"
+    popd
+    exit /b 0
+)
+
+git reset --hard HEAD >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (
-    echo [RESET] 检测到未提交的更改，正在重置...
-    echo [RESET] 检测到未提交的更改，正在重置... >> "%LOG_FILE%"
-    git reset --hard HEAD >> "%LOG_FILE%" 2>&1
-    if errorlevel 1 goto :do_reset_failed
-    git clean -fd >> "%LOG_FILE%" 2>&1
-    if errorlevel 1 goto :do_reset_failed
-    echo [RESET] 仓库已重置到干净状态
-    echo [RESET] 仓库已重置到干净状态 >> "%LOG_FILE%"
-) else (
-    echo [RESET] 仓库已经是干净状态
-    echo [RESET] 仓库已经是干净状态 >> "%LOG_FILE%"
+    echo [RESET] git reset 失败，继续后续 patch 尝试
+    echo [RESET] git reset 失败，继续后续 patch 尝试 >> "%LOG_FILE%"
+    popd
+    exit /b 0
 )
 
+git clean -fd >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+    echo [RESET] git clean 失败，继续后续 patch 尝试
+    echo [RESET] git clean 失败，继续后续 patch 尝试 >> "%LOG_FILE%"
+    popd
+    exit /b 0
+)
+
+echo [RESET] 仓库已重置到干净状态
+echo [RESET] 仓库已重置到干净状态 >> "%LOG_FILE%"
 popd
 exit /b 0
-
-:do_reset_failed
-echo [RESET] 重置失败
-echo [RESET] 重置失败 >> "%LOG_FILE%"
-popd
-exit /b 1
