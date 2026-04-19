@@ -1,0 +1,191 @@
+name: Build V8 Disassembler (v8dasm)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Disassembler/**'
+      - 'scripts/v8dasm-builders/**'
+      - 'configs/v8-versions.json'
+      - '.github/workflows/build-v8dasm.yml'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      v8_version:
+        description: 'V8 version to build (leave empty to build all)'
+        required: false
+        default: ''
+
+jobs:
+  prepare:
+    name: Prepare Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up build matrix
+        id: set-matrix
+        run: |
+          if [ -n "${{ github.event.inputs.v8_version }}" ]; then
+            echo "matrix={\"version\":[{\"v8\":\"${{ github.event.inputs.v8_version }}\",\"args\":\"v8_enable_pointer_compression=false\"}]}" >> $GITHUB_OUTPUT
+          else
+            VERSIONS=$(jq -c '[.versions[] | {v8: .v8_version, node: .node_version, args: .build_args}]' configs/v8-versions.json)
+            echo "matrix={\"version\":$VERSIONS}" >> $GITHUB_OUTPUT
+          fi
+
+  build-macos-arm:
+    name: macOS ARM64 - V8 ${{ matrix.version.v8 }}
+    runs-on: macos-14
+    needs: prepare
+    strategy:
+      matrix: ${{fromJson(needs.prepare.outputs.matrix)}}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip3 install setuptools
+
+      - name: Cache Depot Tools
+        uses: actions/cache@v4
+        with:
+          path: ~/depot_tools
+          key: depot-tools-macos-arm-${{ runner.os }}
+
+      - name: Cache V8 Source
+        uses: actions/cache@v4
+        with:
+          path: ~/v8
+          key: v8-source-${{ matrix.version.v8 }}-macos-arm
+          restore-keys: |
+            v8-source-${{ matrix.version.v8 }}-macos-
+
+      - name: Build v8dasm
+        run: |
+          chmod +x scripts/v8dasm-builders/build-macos-arm.sh
+          scripts/v8dasm-builders/build-macos-arm.sh ${{ matrix.version.v8 }} "${{ matrix.version.args }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v8dasm-macos-arm64-v${{ matrix.version.v8 }}
+          path: ~/v8/v8/v8dasm-${{ matrix.version.v8 }}
+          retention-days: 30
+
+  build-windows:
+    name: Windows x64 - V8 ${{ matrix.version.v8 }}
+    runs-on: windows-2022
+    needs: prepare
+    strategy:
+      matrix: ${{fromJson(needs.prepare.outputs.matrix)}}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache Depot Tools
+        uses: actions/cache@v4
+        with:
+          path: ~/depot_tools
+          key: depot-tools-windows-${{ runner.os }}
+
+      - name: Cache V8 Source
+        uses: actions/cache@v4
+        with:
+          path: ~/v8
+          key: v8-source-${{ matrix.version.v8 }}-windows
+          restore-keys: |
+            v8-source-${{ matrix.version.v8 }}-
+
+      - name: Build v8dasm
+        shell: cmd
+        run: |
+          call scripts\v8dasm-builders\build-windows.cmd ${{ matrix.version.v8 }} "${{ matrix.version.args }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v8dasm-windows-x64-v${{ matrix.version.v8 }}
+          path: v8/v8/v8dasm-${{ matrix.version.v8 }}.exe
+          retention-days: 30
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-macos-arm, build-windows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          cd artifacts
+
+          for dir in v8dasm-*; do
+            platform=$(echo $dir | sed 's/v8dasm-//' | sed 's/-v[0-9].*//')
+            version=$(echo $dir | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+
+            cd $dir
+            # 查找带版本号的文件
+            if [ -f v8dasm-${version}.exe ]; then
+              zip ../../release/${platform}-${version}.zip v8dasm-${version}.exe
+            elif [ -f v8dasm-${version} ]; then
+              zip ../../release/${platform}-${version}.zip v8dasm-${version}
+            fi
+            cd ..
+          done
+
+      - name: Generate release notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## V8 Disassembler 二进制文件
+
+          此版本包含多个平台和 V8 版本的预编译 v8dasm 二进制文件。
+
+          ### 支持的 V8 版本:
+          - **11.3.244.8** (Node.js v20.x)
+
+          ### 支持的平台:
+          - macOS Apple Silicon (ARM64)
+          - Windows x64
+
+          ### 使用方法:
+          下载适合您平台和 V8 版本的二进制文件，然后配合 View8 使用:
+          ```bash
+          python view8.py input.jsc output.js --path ./v8dasm
+          ```
+
+          ### 构建信息:
+          - 构建自 commit: ${{ github.sha }}
+          - 构建时间: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v8dasm-${{ github.run_number }}
+          name: V8 Disassembler Build ${{ github.run_number }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          files: release/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
