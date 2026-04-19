@@ -77,14 +77,14 @@ echo [检查] 检测 patch 是否已经应用... >> "%LOG_FILE%"
 cd /d "%V8_DIR%"
 
 git apply --check --reverse "%PATCH_FILE%" >nul 2>&1
-if %errorlevel% equ 0 (
+if not errorlevel 1 (
     echo [检查] Patch 已经应用过，跳过
     echo [检查] Patch 已经应用过，跳过 >> "%LOG_FILE%"
     exit /b 0
 )
 
-echo [检查] Patch 尚未应用
-echo [检查] Patch 尚未应用 >> "%LOG_FILE%"
+echo [检查] Patch 尚未应用，继续尝试应用
+echo [检查] Patch 尚未应用，继续尝试应用 >> "%LOG_FILE%"
 echo.
 echo. >> "%LOG_FILE%"
 
@@ -94,11 +94,11 @@ echo [第1级] 尝试使用 git apply... >> "%LOG_FILE%"
 cd /d "%V8_DIR%"
 
 git apply --check "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
-if %errorlevel% equ 0 (
+if not errorlevel 1 (
     echo [LEVEL 1] Patch 检查通过，正在应用...
     echo [LEVEL 1] Patch 检查通过，正在应用... >> "%LOG_FILE%"
     git apply --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
-    if %errorlevel% equ 0 (
+    if not errorlevel 1 (
         echo [LEVEL 1] 成功: Patch 已通过 git apply 应用
         echo [LEVEL 1] 成功: Patch 已通过 git apply 应用 >> "%LOG_FILE%"
         exit /b 0
@@ -119,7 +119,7 @@ echo [第2级] 尝试使用 git apply 三向合并... >> "%LOG_FILE%"
 cd /d "%V8_DIR%"
 
 git apply -3 --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
-if %errorlevel% equ 0 (
+if not errorlevel 1 (
     git diff --check 2>&1 | findstr /C:"conflict" >nul
     if errorlevel 1 (
         echo [LEVEL 2] 成功: Patch 已通过三向合并应用
@@ -145,7 +145,7 @@ echo [第3级] 尝试使用 git apply --ignore-whitespace... >> "%LOG_FILE%"
 cd /d "%V8_DIR%"
 
 git apply --ignore-whitespace --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
-if %errorlevel% equ 0 (
+if not errorlevel 1 (
     echo [LEVEL 3] 成功: Patch 已通过 --ignore-whitespace 应用
     echo [LEVEL 3] 成功: Patch 已通过 --ignore-whitespace 应用 >> "%LOG_FILE%"
     exit /b 0
@@ -188,7 +188,7 @@ if errorlevel 1 (
 echo [LEVEL 4] 正在执行语义化替换脚本...
 echo [LEVEL 4] 正在执行语义化替换脚本... >> "%LOG_FILE%"
 %PYTHON_CMD% "%SEMANTIC_SCRIPT%" "%V8_DIR%" "%LOG_FILE%" >> "%LOG_FILE%" 2>&1
-if %errorlevel% equ 0 (
+if not errorlevel 1 (
     echo [LEVEL 4] 成功: Patch 已通过语义化替换应用
     echo [LEVEL 4] 成功: Patch 已通过语义化替换应用 >> "%LOG_FILE%"
     exit /b 0
