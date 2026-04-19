@@ -11,6 +11,30 @@ REM   abort_on_failure - 失败时是否中止 (true/false, 默认: true)
 
 setlocal enabledelayedexpansion
 
+goto :main
+
+:do_reset
+echo [第0级] 重置 V8 仓库到干净状态...
+echo [第0级] 重置 V8 仓库到干净状态... >> "%LOG_FILE%"
+cd /d "%V8_DIR%"
+
+git diff --quiet >nul 2>&1
+if errorlevel 1 (
+    echo [RESET] 检测到未提交的更改，正在重置...
+    echo [RESET] 检测到未提交的更改，正在重置... >> "%LOG_FILE%"
+    git reset --hard HEAD >> "%LOG_FILE%" 2>&1
+    git clean -fd >> "%LOG_FILE%" 2>&1
+    echo [RESET] ✅ 仓库已重置到干净状态
+    echo [RESET] ✅ 仓库已重置到干净状态 >> "%LOG_FILE%"
+) else (
+    echo [RESET] ✅ 仓库已经是干净状态
+    echo [RESET] ✅ 仓库已经是干净状态 >> "%LOG_FILE%"
+)
+echo.
+echo. >> "%LOG_FILE%"
+exit /b 0
+
+:main
 REM 参数解析
 set PATCH_FILE=%~1
 set V8_DIR=%~2
@@ -69,26 +93,7 @@ echo 时间戳: %date% %time%
 echo.
 
 REM 第0级：强制重置到干净状态
-:reset_to_clean_state
-echo [第0级] 重置 V8 仓库到干净状态...
-echo [第0级] 重置 V8 仓库到干净状态... >> "%LOG_FILE%"
-cd /d "%V8_DIR%"
-
-REM 检查是否有未提交的更改
-git diff --quiet >nul 2>&1
-if errorlevel 1 (
-    echo [RESET] 检测到未提交的更改，正在重置...
-    echo [RESET] 检测到未提交的更改，正在重置... >> "%LOG_FILE%"
-    git reset --hard HEAD >> "%LOG_FILE%" 2>&1
-    git clean -fd >> "%LOG_FILE%" 2>&1
-    echo [RESET] ✅ 仓库已重置到干净状态
-    echo [RESET] ✅ 仓库已重置到干净状态 >> "%LOG_FILE%"
-) else (
-    echo [RESET] ✅ 仓库已经是干净状态
-    echo [RESET] ✅ 仓库已经是干净状态 >> "%LOG_FILE%"
-)
-echo.
-echo. >> "%LOG_FILE%"
+call :do_reset
 
 REM 检查 patch 是否已经应用（反向检查）
 :check_already_applied
@@ -132,7 +137,7 @@ echo.
 echo. >> "%LOG_FILE%"
 
 REM 重置后再试第2级
-call :reset_to_clean_state
+call :do_reset
 
 REM 第2级：git apply 三向合并
 :try_git_apply_3way
@@ -160,7 +165,7 @@ echo.
 echo. >> "%LOG_FILE%"
 
 REM 重置后再试第3级
-call :reset_to_clean_state
+call :do_reset
 
 REM 第3级：git apply --ignore-whitespace
 :try_git_apply_ignore_whitespace
@@ -181,7 +186,7 @@ echo.
 echo. >> "%LOG_FILE%"
 
 REM 重置后再试第4级
-call :reset_to_clean_state
+call :do_reset
 
 REM 第4级：语义化替换（Python 脚本）
 :try_semantic_patches

@@ -1,8 +1,8 @@
 {
   "versions": [
     {
-      "v8_version": "11.3.244.8",
-      "node_version": "v20.x",
+      "v8_version": "13.6.233.17",
+      "node_version": "v24.x",
       "build_args": "v8_enable_pointer_compression=false"
     }
   ]
