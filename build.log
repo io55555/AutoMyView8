@@ -1,0 +1,107 @@
+Run call scripts\v8dasm-builders\build-windows.cmd 13.6.233.17 "v8_enable_pointer_compression=false"
+==========================================
+Building v8dasm for Windows x64
+V8 Version: 13.6.233.17
+Build Args: "v8_enable_pointer_compression=false"
+==========================================
+检测到 GitHub Actions 环境
+工作空间: D:\a\AutoMyView8\AutoMyView8
+Updating depot_tools...
+WARNING:root:depot_tools recommends setting the following for
+optimal Chromium development:
+
+$ git config --global core.fscache true
+$ git config --global core.preloadindex true
+
+You can silence this message by setting these recommended values.
+
+You can allow depot_tools to automatically update your global
+Git config to recommended settings by running:
+$ git config --global depot-tools.allowGlobalGitConfig true
+
+To suppress this warning and silence future recommendations, run:
+$ git config --global depot-tools.allowGlobalGitConfig false
+Usage: gclient.py <command> [options]
+
+Meta checkout dependency manager for Git.
+
+Commands are:
+  config       creates a .gclient file in the current directory
+  diff         displays local diff for every dependencies
+  fetch        fetches upstream commits for all modules
+  flatten      flattens the solutions into a single DEPS file
+  getdep       gets revision information and variable values from a DEPS file
+  gitmodules   adds or updates Git Submodules based on the contents of the DEPS file
+  grep         greps through git repos managed by gclient
+  help         prints list of commands or help for a specific command
+  installhooks installs gclient git hooks
+  metrics      reports, and optionally modifies, the status of metric collection
+  pack         generates a patch which can be applied at the root of the tree
+args ...] on all the dependencies
+  revert       reverts all modifications in every dependencies
+  revinfo      outputs revision info mapping for the client and its dependencies
+  root         outputs the solution root (or current dir if there isn't one)
+  runhooks     runs hooks for files that have been modified in the local working copy
+  setdep       modifies dependency revisions and variable values in a DEPS file
+  status       shows modification status for every dependencies
+  sync         checkout/update all modules
+  validate     validates the .gclient and DEPS syntax
+  verify       verifies the DEPS file deps are only from allowed_hosts
+
+Options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -j JOBS, --jobs=JOBS  Specify how many SCM commands can run in parallel;
+                        defaults to 8 on this machine
+  -v, --verbose         Produces additional output for diagnostics. Can be
+                        used up to three times for more logging info.
+  --gclientfile=CONFIG_FILENAME
+                        Specify an alternate .gclient file
+  --spec=SPEC           create a gclient file containing the provided string.
+                        Due to Cygwin/Python brokenness, it can't contain any
+                        newlines.
+  --no-nag-max          Ignored for backwards compatibility.
+=====[ Checking out V8 13.6.233.17 ]=====
+HEAD is now at b0a55a7dad7 Version 13.6.233.17
+Updating depot_tools...
+WARNING:root:depot_tools recommends setting the following for
+optimal Chromium development:
+
+$ git config --global core.fscache true
+$ git config --global core.preloadindex true
+
+You can silence this message by setting these recommended values.
+
+You can allow depot_tools to automatically update your global
+Git config to recommended settings by running:
+$ git config --global depot-tools.allowGlobalGitConfig true
+
+To suppress this warning and silence future recommendations, run:
+$ git config --global depot-tools.allowGlobalGitConfig false
+
+WARNING: 'v8\tools\win' is no longer part of this client.
+It is recommended that you manually remove it or use 'gclient sync -D' next time.
+
+WARNING: 'v8\third_party\libpfm4\src' is no longer part of this client.
+It is recommended that you manually remove it or use 'gclient sync -D' next time.
+
+WARNING: 'v8\third_party\libpfm4' is no longer part of this client.
+It is recommended that you manually remove it or use 'gclient sync -D' next time.
+
+WARNING: 'v8\third_party\dragonbox\src' is no longer part of this client.
+It is recommended that you manually remove it or use 'gclient sync -D' next time.
+________ running 'python3 third_party/depot_tools/update_depot_tools_toggle.py --disable' in 'C:\Users\runneradmin\v8\v8'
+________ running 'python3 build/landmines.py --landmine-scripts tools/get_landmines.py' in 'C:\Users\runneradmin\v8\v8'
+________ running 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth -u --bucket v8-wasm-spec-tests -s test/wasm-spec-tests/tests.tar.gz.sha1' in 'C:\Users\runneradmin\v8\v8'
+________ running 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth -u --bucket v8-wasm-spec-tests -s test/wasm-js/tests.tar.gz.sha1' in 'C:\Users\runneradmin\v8\v8'
+________ running 'python3 build/vs_toolchain.py update --force' in 'C:\Users\runneradmin\v8\v8'
+________ running 'python3 build/util/lastchange.py -o build/util/LASTCHANGE' in 'C:\Users\runneradmin\v8\v8'
+________ running 'vpython3.bat -vpython-spec .vpython3 -vpython-tool install' in 'C:\Users\runneradmin\v8\v8'
+Hook 'vpython3.bat -vpython-spec .vpython3 -vpython-tool install' took 27.75 secs
+________ running 'python3 buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance projects/rbe-chrome-untrusted/instances/default_instance --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project  --skip_remoteexec_cfg_fetch' in 'C:\Users\runneradmin\v8\v8'
+generate reproxy.cfg using C:\Users\runneradmin\v8\v8\buildtools\reclient_cfgs\reproxy_cfg_templates\reproxy.cfg.template
+________ running 'python3 build/config/siso/configure_siso.py --rbe_instance projects/rbe-chrome-untrusted/instances/default_instance' in 'C:\Users\runneradmin\v8\v8'
+=====[ Applying v8.patch ]=====
+0s
+Run actions/upload-artifact@v4
+Error: No files were found with the provided path: artifacts/v8dasm-13.6.233.17.exe. No artifacts will be uploaded.
