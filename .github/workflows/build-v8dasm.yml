@@ -74,7 +74,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: v8dasm-windows-x64-v${{ matrix.version.v8 }}
-          path: v8/v8/v8dasm-${{ matrix.version.v8 }}.exe
+          path: ~/v8/v8/v8dasm-${{ matrix.version.v8 }}.exe
           retention-days: 30
 
   release:
