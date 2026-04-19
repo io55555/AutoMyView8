@@ -149,6 +149,16 @@ if exist %OUTPUT_NAME% (
     echo.
     echo ✅ 编译完成: %OUTPUT_NAME%
     echo    位置: %CD%\%OUTPUT_NAME%
+
+    if not "%GITHUB_WORKSPACE%"=="" (
+        if not exist "%GITHUB_WORKSPACE%\artifacts" mkdir "%GITHUB_WORKSPACE%\artifacts"
+        copy /Y "%CD%\%OUTPUT_NAME%" "%GITHUB_WORKSPACE%\artifacts\%OUTPUT_NAME%" >nul
+        if not exist "%GITHUB_WORKSPACE%\artifacts\%OUTPUT_NAME%" (
+            echo ERROR: failed to stage artifact to %GITHUB_WORKSPACE%\artifacts\%OUTPUT_NAME%
+            exit /b 1
+        )
+        echo ✅ 已暂存产物: %GITHUB_WORKSPACE%\artifacts\%OUTPUT_NAME%
+    )
 ) else (
     echo ERROR: %OUTPUT_NAME% not found!
     exit /b 1
