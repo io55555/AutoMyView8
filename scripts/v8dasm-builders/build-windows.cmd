@@ -132,6 +132,13 @@ echo =====[ Compiling v8dasm ]=====
 set DASM_SOURCE=%WORKSPACE_DIR%\Disassembler\v8dasm.cpp
 set OUTPUT_NAME=v8dasm-%V8_VERSION%.exe
 
+if not "%GITHUB_WORKSPACE%"=="" (
+    if not exist "%GITHUB_WORKSPACE%\artifacts" mkdir "%GITHUB_WORKSPACE%\artifacts"
+    set OUTPUT_PATH=%GITHUB_WORKSPACE%\artifacts\%OUTPUT_NAME%
+) else (
+    set OUTPUT_PATH=%CD%\%OUTPUT_NAME%
+)
+
 clang++ %DASM_SOURCE% ^
     -std=c++20 ^
     -O2 ^
@@ -140,26 +147,16 @@ clang++ %DASM_SOURCE% ^
     -lv8_libbase ^
     -lv8_libplatform ^
     -lv8_monolith ^
-    -o %OUTPUT_NAME%
+    -o "%OUTPUT_PATH%"
 
 REM 验证编译
-if exist %OUTPUT_NAME% (
+if exist "%OUTPUT_PATH%" (
     echo =====[ Build Successful ]=====
-    dir %OUTPUT_NAME%
+    dir "%OUTPUT_PATH%"
     echo.
     echo ✅ 编译完成: %OUTPUT_NAME%
-    echo    位置: %CD%\%OUTPUT_NAME%
-
-    if not "%GITHUB_WORKSPACE%"=="" (
-        if not exist "%GITHUB_WORKSPACE%\artifacts" mkdir "%GITHUB_WORKSPACE%\artifacts"
-        copy /Y "%CD%\%OUTPUT_NAME%" "%GITHUB_WORKSPACE%\artifacts\%OUTPUT_NAME%" >nul
-        if not exist "%GITHUB_WORKSPACE%\artifacts\%OUTPUT_NAME%" (
-            echo ERROR: failed to stage artifact to %GITHUB_WORKSPACE%\artifacts\%OUTPUT_NAME%
-            exit /b 1
-        )
-        echo ✅ 已暂存产物: %GITHUB_WORKSPACE%\artifacts\%OUTPUT_NAME%
-    )
+    echo    位置: %OUTPUT_PATH%
 ) else (
-    echo ERROR: %OUTPUT_NAME% not found!
+    echo ERROR: %OUTPUT_PATH% not found!
     exit /b 1
 )

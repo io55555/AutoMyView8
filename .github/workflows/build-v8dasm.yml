@@ -70,40 +70,6 @@ jobs:
         run: |
           call scripts\v8dasm-builders\build-windows.cmd ${{ matrix.version.v8 }} "${{ matrix.version.args }}"
 
-      - name: Debug binary locations
-        shell: pwsh
-        run: |
-          Get-ChildItem -Path $env:USERPROFILE -Filter "v8dasm-${{ matrix.version.v8 }}.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 20 FullName
-
-      - name: Stage artifact
-        shell: pwsh
-        run: |
-          $artifactName = "v8dasm-${{ matrix.version.v8 }}.exe"
-          $workspace = $env:GITHUB_WORKSPACE
-          $stageDir = Join-Path $workspace "artifacts"
-          New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
-
-          $candidates = @(
-            (Join-Path $env:USERPROFILE "v8/v8/$artifactName"),
-            (Join-Path $workspace "v8/v8/$artifactName")
-          )
-
-          $found = $null
-          foreach ($path in $candidates) {
-            if (Test-Path $path) { $found = $path; break }
-          }
-
-          if (-not $found) {
-            $found = Get-ChildItem -Path $env:USERPROFILE -Filter $artifactName -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
-          }
-
-          if (-not $found) {
-            Write-Error "Artifact not found: $artifactName"
-          }
-
-          Copy-Item -Path $found -Destination (Join-Path $stageDir $artifactName) -Force
-          Write-Host "Staged artifact: $(Join-Path $stageDir $artifactName)"
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
