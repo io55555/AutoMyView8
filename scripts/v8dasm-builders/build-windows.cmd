@@ -30,7 +30,7 @@ git config --global user.email "v8dasm.builder@localhost"
 git config --global core.autocrlf false
 git config --global core.filemode false
 
-cd %HOMEPATH%
+cd /d %HOMEDRIVE%%HOMEPATH%
 
 REM 获取 Depot Tools
 if not exist depot_tools (
