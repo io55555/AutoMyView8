@@ -64,24 +64,47 @@ call git fetch --all --tags
 call git checkout %V8_VERSION%
 call gclient sync
 
-REM 应用补丁（使用多级退避策略）
+REM 应用补丁（内联多级回退，避免外部脚本在 CI 中异常退出）
 echo =====[ Applying v8.patch ]=====
 set PATCH_FILE=%WORKSPACE_DIR%\Disassembler\v8.patch
 set PATCH_LOG=%WORKSPACE_DIR%\scripts\v8dasm-builders\patch-utils\patch-state.log
 
-REM 调用统一的 patch 应用脚本
-call "%WORKSPACE_DIR%\scripts\v8dasm-builders\patch-utils\apply-patch.cmd" ^
-    "%PATCH_FILE%" ^
-    "%V8_DIR%" ^
-    "%PATCH_LOG%" ^
-    "true"
+echo =====[ V8 Patch Application - Inline Fallback ]===== > "%PATCH_LOG%"
+echo Patch 文件: %PATCH_FILE% >> "%PATCH_LOG%"
+echo V8 目录: %V8_DIR% >> "%PATCH_LOG%"
+echo 日志文件: %PATCH_LOG% >> "%PATCH_LOG%"
 
-if %errorlevel% neq 0 (
-    echo ❌ Patch application failed. Build aborted.
-    echo 请检查日志文件: %PATCH_LOG%
-    exit /b 1
+cd /d "%V8_DIR%"
+git reset --hard HEAD >> "%PATCH_LOG%" 2>&1
+git clean -fd >> "%PATCH_LOG%" 2>&1
+
+git apply --check --reverse "%PATCH_FILE%" >> "%PATCH_LOG%" 2>&1
+if not errorlevel 1 (
+    echo Patch already applied, skip.
+    echo Patch already applied, skip. >> "%PATCH_LOG%"
+    goto :patch_done
 )
 
+git apply --check "%PATCH_FILE%" >> "%PATCH_LOG%" 2>&1
+if not errorlevel 1 (
+    git apply --verbose "%PATCH_FILE%" >> "%PATCH_LOG%" 2>&1
+    if not errorlevel 1 goto :patch_done
+)
+
+git apply -3 --verbose "%PATCH_FILE%" >> "%PATCH_LOG%" 2>&1
+if not errorlevel 1 goto :patch_done
+
+git apply --ignore-whitespace --verbose "%PATCH_FILE%" >> "%PATCH_LOG%" 2>&1
+if not errorlevel 1 goto :patch_done
+
+python "%WORKSPACE_DIR%\scripts\v8dasm-builders\patch-utils\semantic-patches.py" "%V8_DIR%" "%PATCH_LOG%" >> "%PATCH_LOG%" 2>&1
+if not errorlevel 1 goto :patch_done
+
+echo ❌ Patch application failed. Build aborted.
+echo 请检查日志文件: %PATCH_LOG%
+exit /b 1
+
+:patch_done
 echo ✅ Patch applied successfully
 
 
