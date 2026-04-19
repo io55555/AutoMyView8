@@ -6,7 +6,6 @@ Build Args: "v8_enable_pointer_compression=false"
 ==========================================
 检测到 GitHub Actions 环境
 工作空间: D:\a\AutoMyView8\AutoMyView8
-The system cannot find the path specified.
 =====[ Getting Depot Tools ]=====
 Updating depot_tools...
 Downloading CIPD client for windows-amd64 from https://chrome-infra-packages.appspot.com/client?platform=windows-amd64&version=git_revision:4048470b2263eb1bfee6134ea4b3b4b7da2e14b4...
@@ -70,8 +69,8 @@ Git config to recommended settings by running:
 $ git config --global depot-tools.allowGlobalGitConfig true
 To suppress this warning and silence future recommendations, run:
 $ git config --global depot-tools.allowGlobalGitConfig false
-________ running 'git -c core.deltaBaseCacheLimit=2g clone --no-checkout --progress https://chromium.googlesource.com/v8/v8.git D:\a\AutoMyView8\AutoMyView8\v8\_gclient_v8_a_a2w0e2' in 'D:\a\AutoMyView8\AutoMyView8\v8'
-Cloning into 'D:\a\AutoMyView8\AutoMyView8\v8\_gclient_v8_a_a2w0e2'...
+________ running 'git -c core.deltaBaseCacheLimit=2g clone --no-checkout --progress https://chromium.googlesource.com/v8/v8.git C:\Users\runneradmin\v8\_gclient_v8_b_ynuddj' in 'C:\Users\runneradmin\v8'
+Cloning into 'C:\Users\runneradmin\v8\_gclient_v8_b_ynuddj'...
 remote: Sending approximately 1.42 GiB ...        
 remote: Counting objects: 1           
 remote: Counting objects: 7462, done        
@@ -79,198 +78,199 @@ Receiving objects:   0% (1/1266497)
 Receiving objects:   1% (12665/1266497)
 Receiving objects:   2% (25330/1266497)
 Receiving objects:   3% (37995/1266497)
-Receiving objects:   4% (50660/1266497), 16.07 MiB | 32.11 MiB/s
-Receiving objects:   5% (63325/1266497), 16.07 MiB | 32.11 MiB/s
-Receiving objects:   5% (75624/1266497), 16.07 MiB | 32.11 MiB/s
-Receiving objects:   6% (75990/1266497), 34.22 MiB | 34.21 MiB/s
-Receiving objects:   7% (88655/1266497), 34.22 MiB | 34.21 MiB/s
-Receiving objects:   8% (101320/1266497), 34.22 MiB | 34.21 MiB/s
-Receiving objects:   9% (113985/1266497), 34.22 MiB | 34.21 MiB/s
-Receiving objects:  10% (126650/1266497), 51.96 MiB | 34.63 MiB/s
-Receiving objects:  11% (139315/1266497), 51.96 MiB | 34.63 MiB/s
-Receiving objects:  11% (148897/1266497), 51.96 MiB | 34.63 MiB/s
-Receiving objects:  12% (151980/1266497), 71.95 MiB | 35.97 MiB/s
-Receiving objects:  13% (164645/1266497), 96.10 MiB | 38.44 MiB/s
-Receiving objects:  14% (177310/1266497), 96.10 MiB | 38.44 MiB/s
-Receiving objects:  14% (183350/1266497), 96.10 MiB | 38.44 MiB/s
-Receiving objects:  15% (189975/1266497), 120.62 MiB | 40.20 MiB/s
-Receiving objects:  16% (202640/1266497), 120.62 MiB | 40.20 MiB/s
-Receiving objects:  17% (215305/1266497), 145.33 MiB | 41.52 MiB/s
-Receiving objects:  18% (227970/1266497), 145.33 MiB | 41.52 MiB/s
-Receiving objects:  18% (229508/1266497), 145.33 MiB | 41.52 MiB/s
-Receiving objects:  19% (240635/1266497), 170.92 MiB | 42.73 MiB/s
-Receiving objects:  20% (253300/1266497), 170.92 MiB | 42.73 MiB/s
-Receiving objects:  21% (265965/1266497), 196.37 MiB | 43.64 MiB/s
-Receiving objects:  22% (278630/1266497), 196.37 MiB | 43.64 MiB/s
-Receiving objects:  23% (291295/1266497), 196.37 MiB | 43.64 MiB/s
-Receiving objects:  24% (303960/1266497), 196.37 MiB | 43.64 MiB/s
-Receiving objects:  24% (306989/1266497), 196.37 MiB | 43.64 MiB/s
-Receiving objects:  25% (316625/1266497), 223.35 MiB | 46.06 MiB/s
-Receiving objects:  26% (329290/1266497), 223.35 MiB | 46.06 MiB/s
-Receiving objects:  27% (341955/1266497), 223.35 MiB | 46.06 MiB/s
-Receiving objects:  28% (354620/1266497), 223.35 MiB | 46.06 MiB/s
-Receiving objects:  29% (367285/1266497), 223.35 MiB | 46.06 MiB/s
-Receiving objects:  30% (379950/1266497), 223.35 MiB | 46.06 MiB/s
-Receiving objects:  31% (392615/1266497), 223.35 MiB | 46.06 MiB/s
-Receiving objects:  32% (405280/1266497), 223.35 MiB | 46.06 MiB/s
-Receiving objects:  33% (417945/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  34% (430609/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  35% (443274/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  36% (455939/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  37% (468604/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  38% (481269/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  39% (493934/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  40% (506599/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  41% (519264/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  42% (531929/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  43% (544594/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  44% (557259/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  45% (569924/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  46% (582589/1266497), 252.46 MiB | 48.50 MiB/s
-Receiving objects:  47% (595254/1266497), 286.93 MiB | 52.21 MiB/s
-Receiving objects:  47% (596235/1266497), 286.93 MiB | 52.21 MiB/s
-Receiving objects:  48% (607919/1266497), 286.93 MiB | 52.21 MiB/s
-Receiving objects:  49% (620584/1266497), 286.93 MiB | 52.21 MiB/s
-Receiving objects:  50% (633249/1266497), 286.93 MiB | 52.21 MiB/s
-Receiving objects:  51% (645914/1266497), 286.93 MiB | 52.21 MiB/s
-Receiving objects:  52% (658579/1266497), 286.93 MiB | 52.21 MiB/s
-Receiving objects:  53% (671244/1266497), 286.93 MiB | 52.21 MiB/s
-Receiving objects:  54% (683909/1266497), 286.93 MiB | 52.21 MiB/s
-Receiving objects:  55% (696574/1266497), 286.93 MiB | 52.21 MiB/s
-Receiving objects:  56% (709239/1266497), 286.93 MiB | 52.21 MiB/s
-Receiving objects:  57% (721904/1266497), 307.85 MiB | 52.42 MiB/s
-Receiving objects:  58% (734569/1266497), 307.85 MiB | 52.42 MiB/s
-Receiving objects:  58% (736232/1266497), 324.27 MiB | 50.71 MiB/s
-Receiving objects:  58% (745863/1266497), 357.98 MiB | 47.25 MiB/s
-Receiving objects:  59% (747234/1266497), 357.98 MiB | 47.25 MiB/s
-Receiving objects:  59% (752559/1266497), 391.03 MiB | 43.26 MiB/s
-Receiving objects:  59% (757090/1266497), 422.90 MiB | 37.88 MiB/s
-Receiving objects:  60% (759899/1266497), 439.29 MiB | 33.86 MiB/s
-Receiving objects:  60% (762385/1266497), 456.18 MiB | 32.97 MiB/s
-Receiving objects:  60% (769892/1266497), 490.88 MiB | 33.21 MiB/s
-Receiving objects:  61% (772564/1266497), 508.36 MiB | 33.42 MiB/s
-Receiving objects:  61% (775216/1266497), 525.15 MiB | 33.53 MiB/s
-Receiving objects:  61% (782263/1266497), 559.11 MiB | 33.65 MiB/s
-Receiving objects:  62% (785229/1266497), 559.11 MiB | 33.65 MiB/s
-Receiving objects:  62% (789223/1266497), 594.38 MiB | 34.46 MiB/s
-Receiving objects:  62% (795230/1266497), 630.37 MiB | 34.89 MiB/s
-Receiving objects:  63% (797894/1266497), 630.37 MiB | 34.89 MiB/s
-Receiving objects:  63% (802724/1266497), 665.99 MiB | 35.03 MiB/s
-Receiving objects:  63% (807868/1266497), 700.92 MiB | 35.24 MiB/s
-Receiving objects:  64% (810559/1266497), 718.47 MiB | 35.41 MiB/s
-Receiving objects:  64% (813622/1266497), 736.01 MiB | 35.49 MiB/s
-Receiving objects:  64% (822213/1266497), 770.85 MiB | 35.26 MiB/s
-Receiving objects:  65% (823224/1266497), 770.85 MiB | 35.26 MiB/s
-Receiving objects:  65% (828948/1266497), 807.76 MiB | 35.42 MiB/s
-Receiving objects:  66% (835889/1266497), 826.65 MiB | 35.70 MiB/s
-Receiving objects:  66% (839682/1266497), 845.57 MiB | 36.06 MiB/s
-Receiving objects:  66% (847605/1266497), 885.00 MiB | 37.01 MiB/s
-Receiving objects:  67% (848553/1266497), 885.00 MiB | 37.01 MiB/s
-Receiving objects:  68% (861218/1266497), 907.49 MiB | 38.11 MiB/s
-Receiving objects:  68% (864352/1266497), 929.28 MiB | 39.14 MiB/s
-Receiving objects:  69% (873883/1266497), 952.65 MiB | 40.40 MiB/s
-Receiving objects:  69% (885806/1266497), 976.45 MiB | 41.67 MiB/s
-Receiving objects:  70% (886548/1266497), 976.45 MiB | 41.67 MiB/s
-Receiving objects:  71% (899213/1266497), 998.86 MiB | 42.46 MiB/s
-Receiving objects:  71% (904561/1266497), 1021.09 MiB | 43.21 MiB/s
-Receiving objects:  72% (911878/1266497), 1021.09 MiB | 43.21 MiB/s
-Receiving objects:  72% (922740/1266497), 1.04 GiB | 45.17 MiB/s   
-Receiving objects:  73% (924543/1266497), 1.04 GiB | 45.17 MiB/s
-Receiving objects:  74% (937208/1266497), 1.06 GiB | 46.53 MiB/s
-Receiving objects:  74% (946566/1266497), 1.09 GiB | 47.52 MiB/s
-Receiving objects:  75% (949873/1266497), 1.09 GiB | 47.52 MiB/s
-Receiving objects:  76% (962538/1266497), 1.12 GiB | 48.54 MiB/s
-Receiving objects:  76% (971798/1266497), 1.14 GiB | 49.21 MiB/s
-Receiving objects:  77% (975203/1266497), 1.14 GiB | 49.21 MiB/s
-Receiving objects:  78% (987868/1266497), 1.17 GiB | 49.82 MiB/s
-Receiving objects:  78% (998147/1266497), 1.19 GiB | 50.76 MiB/s
-Receiving objects:  79% (1000533/1266497), 1.19 GiB | 50.76 MiB/s
-Receiving objects:  80% (1013198/1266497), 1.22 GiB | 51.71 MiB/s
-Receiving objects:  80% (1017914/1266497), 1.24 GiB | 52.30 MiB/s
-Receiving objects:  81% (1025863/1266497), 1.27 GiB | 52.94 MiB/s
-Receiving objects:  81% (1037861/1266497), 1.30 GiB | 52.97 MiB/s
-Receiving objects:  82% (1038528/1266497), 1.30 GiB | 52.97 MiB/s
-Receiving objects:  82% (1050089/1266497), 1.33 GiB | 49.14 MiB/s
-Receiving objects:  83% (1051193/1266497), 1.33 GiB | 49.14 MiB/s
-Receiving objects:  83% (1058645/1266497), 1.36 GiB | 44.43 MiB/s
-Receiving objects:  84% (1063858/1266497), 1.36 GiB | 44.43 MiB/s
-Receiving objects:  85% (1076523/1266497), 1.38 GiB | 41.98 MiB/s
-Receiving objects:  86% (1089188/1266497), 1.38 GiB | 41.98 MiB/s
-Receiving objects:  87% (1101853/1266497), 1.38 GiB | 41.98 MiB/s
-Receiving objects:  88% (1114518/1266497), 1.38 GiB | 41.98 MiB/s
-Receiving objects:  89% (1127183/1266497), 1.38 GiB | 41.98 MiB/s
-Receiving objects:  90% (1139848/1266497), 1.38 GiB | 41.98 MiB/s
-Receiving objects:  91% (1152513/1266497), 1.38 GiB | 41.98 MiB/s
-Receiving objects:  92% (1165178/1266497), 1.38 GiB | 41.98 MiB/s
-Receiving objects:  93% (1177843/1266497), 1.38 GiB | 41.98 MiB/s
-Receiving objects:  94% (1190508/1266497), 1.40 GiB | 41.15 MiB/s
-Receiving objects:  94% (1190831/1266497), 1.40 GiB | 41.15 MiB/s
-Receiving objects:  95% (1203173/1266497), 1.40 GiB | 41.15 MiB/s
-Receiving objects:  96% (1215838/1266497), 1.40 GiB | 41.15 MiB/s
-Receiving objects:  97% (1228503/1266497), 1.40 GiB | 41.15 MiB/s
-Receiving objects:  98% (1241168/1266497), 1.40 GiB | 41.15 MiB/s
-Receiving objects:  99% (1253833/1266497), 1.40 GiB | 41.15 MiB/s
+Receiving objects:   4% (50660/1266497), 15.53 MiB | 31.04 MiB/s
+Receiving objects:   5% (63325/1266497), 15.53 MiB | 31.04 MiB/s
+Receiving objects:   5% (71117/1266497), 15.53 MiB | 31.04 MiB/s
+Receiving objects:   6% (75990/1266497), 32.40 MiB | 32.39 MiB/s
+Receiving objects:   7% (88655/1266497), 32.40 MiB | 32.39 MiB/s
+Receiving objects:   8% (101320/1266497), 32.40 MiB | 32.39 MiB/s
+Receiving objects:   9% (113985/1266497), 48.99 MiB | 32.65 MiB/s
+Receiving objects:  10% (126650/1266497), 48.99 MiB | 32.65 MiB/s
+Receiving objects:  11% (139315/1266497), 48.99 MiB | 32.65 MiB/s
+Receiving objects:  11% (144575/1266497), 48.99 MiB | 32.65 MiB/s
+Receiving objects:  12% (151980/1266497), 65.33 MiB | 32.67 MiB/s
+Receiving objects:  13% (164645/1266497), 89.47 MiB | 35.80 MiB/s
+Receiving objects:  13% (176476/1266497), 89.47 MiB | 35.80 MiB/s
+Receiving objects:  14% (177310/1266497), 113.60 MiB | 37.88 MiB/s
+Receiving objects:  15% (189975/1266497), 113.60 MiB | 37.88 MiB/s
+Receiving objects:  16% (202640/1266497), 137.26 MiB | 39.23 MiB/s
+Receiving objects:  17% (215305/1266497), 137.26 MiB | 39.23 MiB/s
+Receiving objects:  17% (219774/1266497), 137.26 MiB | 39.23 MiB/s
+Receiving objects:  18% (227970/1266497), 162.30 MiB | 40.58 MiB/s
+Receiving objects:  19% (240635/1266497), 162.30 MiB | 40.58 MiB/s
+Receiving objects:  20% (253300/1266497), 187.09 MiB | 41.58 MiB/s
+Receiving objects:  21% (265965/1266497), 187.09 MiB | 41.58 MiB/s
+Receiving objects:  21% (273959/1266497), 187.09 MiB | 41.58 MiB/s
+Receiving objects:  22% (278630/1266497), 212.03 MiB | 43.68 MiB/s
+Receiving objects:  23% (291295/1266497), 212.03 MiB | 43.68 MiB/s
+Receiving objects:  24% (303960/1266497), 212.03 MiB | 43.68 MiB/s
+Receiving objects:  25% (316625/1266497), 212.03 MiB | 43.68 MiB/s
+Receiving objects:  26% (329290/1266497), 212.03 MiB | 43.68 MiB/s
+Receiving objects:  27% (341955/1266497), 212.03 MiB | 43.68 MiB/s
+Receiving objects:  28% (354620/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  29% (367285/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  30% (379950/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  31% (392615/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  32% (405280/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  33% (417945/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  34% (430609/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  35% (443274/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  36% (455939/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  37% (468604/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  37% (480556/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  38% (481269/1266497), 237.29 MiB | 45.54 MiB/s
+Receiving objects:  39% (493934/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  40% (506599/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  41% (519264/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  42% (531929/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  43% (544594/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  44% (557259/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  45% (569924/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  46% (582589/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  47% (595254/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  48% (607919/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  49% (620584/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  50% (633249/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  51% (645914/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  52% (658579/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  53% (671244/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  54% (683909/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  55% (696574/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  56% (709239/1266497), 270.41 MiB | 49.23 MiB/s
+Receiving objects:  56% (720455/1266497), 300.02 MiB | 52.18 MiB/s
+Receiving objects:  57% (721904/1266497), 315.23 MiB | 50.19 MiB/s
+Receiving objects:  58% (734569/1266497), 315.23 MiB | 50.19 MiB/s
+Receiving objects:  58% (742911/1266497), 330.95 MiB | 48.32 MiB/s
+Receiving objects:  59% (747234/1266497), 346.82 MiB | 46.59 MiB/s
+Receiving objects:  59% (750592/1266497), 362.25 MiB | 44.45 MiB/s
+Receiving objects:  59% (754972/1266497), 393.33 MiB | 40.31 MiB/s
+Receiving objects:  59% (759456/1266497), 424.75 MiB | 34.30 MiB/s
+Receiving objects:  60% (759899/1266497), 439.79 MiB | 31.06 MiB/s
+Receiving objects:  60% (765774/1266497), 455.26 MiB | 31.12 MiB/s
+Receiving objects:  60% (771228/1266497), 482.79 MiB | 30.22 MiB/s
+Receiving objects:  61% (772564/1266497), 499.12 MiB | 30.42 MiB/s
+Receiving objects:  61% (775740/1266497), 529.43 MiB | 30.25 MiB/s
+Receiving objects:  61% (782908/1266497), 561.33 MiB | 30.36 MiB/s
+Receiving objects:  62% (785229/1266497), 561.33 MiB | 30.36 MiB/s
+Receiving objects:  62% (788851/1266497), 593.74 MiB | 30.78 MiB/s
+Receiving objects:  62% (794647/1266497), 627.12 MiB | 32.08 MiB/s
+Receiving objects:  63% (797894/1266497), 643.55 MiB | 32.10 MiB/s
+Receiving objects:  63% (801400/1266497), 659.88 MiB | 32.52 MiB/s
+Receiving objects:  63% (806026/1266497), 692.50 MiB | 32.67 MiB/s
+Receiving objects:  64% (810559/1266497), 708.71 MiB | 32.75 MiB/s
+Receiving objects:  64% (811491/1266497), 725.19 MiB | 32.88 MiB/s
+Receiving objects:  64% (817514/1266497), 758.41 MiB | 32.87 MiB/s
+Receiving objects:  65% (823224/1266497), 775.01 MiB | 32.86 MiB/s
+Receiving objects:  65% (825785/1266497), 792.77 MiB | 33.16 MiB/s
+Receiving objects:  65% (832897/1266497), 827.99 MiB | 33.69 MiB/s
+Receiving objects:  66% (835889/1266497), 827.99 MiB | 33.69 MiB/s
+Receiving objects:  66% (842234/1266497), 864.78 MiB | 34.68 MiB/s
+Receiving objects:  67% (848553/1266497), 883.74 MiB | 35.23 MiB/s
+Receiving objects:  67% (852460/1266497), 905.14 MiB | 36.25 MiB/s
+Receiving objects:  68% (861218/1266497), 925.35 MiB | 37.10 MiB/s
+Receiving objects:  68% (871095/1266497), 948.15 MiB | 38.48 MiB/s
+Receiving objects:  69% (873883/1266497), 948.15 MiB | 38.48 MiB/s
+Receiving objects:  70% (886548/1266497), 970.09 MiB | 39.40 MiB/s
+Receiving objects:  70% (891847/1266497), 992.23 MiB | 40.41 MiB/s
+Receiving objects:  71% (899213/1266497), 992.23 MiB | 40.41 MiB/s
+Receiving objects:  71% (910482/1266497), 1.00 GiB | 41.68 MiB/s  
+Receiving objects:  72% (911878/1266497), 1.00 GiB | 41.68 MiB/s
+Receiving objects:  73% (924543/1266497), 1.03 GiB | 42.41 MiB/s
+Receiving objects:  73% (925782/1266497), 1.05 GiB | 43.55 MiB/s
+Receiving objects:  74% (937208/1266497), 1.07 GiB | 44.38 MiB/s
+Receiving objects:  74% (949610/1266497), 1.10 GiB | 45.57 MiB/s
+Receiving objects:  75% (949873/1266497), 1.10 GiB | 45.57 MiB/s
+Receiving objects:  76% (962538/1266497), 1.12 GiB | 46.11 MiB/s
+Receiving objects:  76% (974527/1266497), 1.15 GiB | 46.88 MiB/s
+Receiving objects:  77% (975203/1266497), 1.15 GiB | 46.88 MiB/s
+Receiving objects:  78% (987868/1266497), 1.17 GiB | 47.29 MiB/s
+Receiving objects:  78% (998628/1266497), 1.20 GiB | 48.54 MiB/s
+Receiving objects:  79% (1000533/1266497), 1.20 GiB | 48.54 MiB/s
+Receiving objects:  80% (1013198/1266497), 1.22 GiB | 49.31 MiB/s
+Receiving objects:  80% (1017700/1266497), 1.25 GiB | 49.98 MiB/s
+Receiving objects:  81% (1025863/1266497), 1.27 GiB | 50.33 MiB/s
+Receiving objects:  81% (1035917/1266497), 1.30 GiB | 50.39 MiB/s
+Receiving objects:  82% (1038528/1266497), 1.30 GiB | 50.39 MiB/s
+Receiving objects:  82% (1049601/1266497), 1.33 GiB | 46.86 MiB/s
+Receiving objects:  83% (1051193/1266497), 1.33 GiB | 46.86 MiB/s
+Receiving objects:  83% (1057767/1266497), 1.36 GiB | 42.44 MiB/s
+Receiving objects:  84% (1063858/1266497), 1.37 GiB | 39.87 MiB/s
+Receiving objects:  85% (1076523/1266497), 1.37 GiB | 39.87 MiB/s
+Receiving objects:  86% (1089188/1266497), 1.37 GiB | 39.87 MiB/s
+Receiving objects:  87% (1101853/1266497), 1.37 GiB | 39.87 MiB/s
+Receiving objects:  88% (1114518/1266497), 1.37 GiB | 39.87 MiB/s
+Receiving objects:  89% (1127183/1266497), 1.37 GiB | 39.87 MiB/s
+Receiving objects:  90% (1139848/1266497), 1.39 GiB | 38.70 MiB/s
+Receiving objects:  90% (1148841/1266497), 1.39 GiB | 38.70 MiB/s
+Receiving objects:  91% (1152513/1266497), 1.39 GiB | 38.70 MiB/s
+Receiving objects:  92% (1165178/1266497), 1.39 GiB | 38.70 MiB/s
+Receiving objects:  93% (1177843/1266497), 1.39 GiB | 38.70 MiB/s
+Receiving objects:  94% (1190508/1266497), 1.39 GiB | 38.70 MiB/s
+Receiving objects:  95% (1203173/1266497), 1.39 GiB | 38.70 MiB/s
+Receiving objects:  96% (1215838/1266497), 1.39 GiB | 38.70 MiB/s
+Receiving objects:  97% (1228503/1266497), 1.39 GiB | 38.70 MiB/s
+Receiving objects:  98% (1241168/1266497), 1.39 GiB | 38.70 MiB/s
+Receiving objects:  99% (1253833/1266497), 1.41 GiB | 38.23 MiB/s
 remote: Total 1266497 (delta 1030268), reused 1266497 (delta 1030268)        
-Receiving objects: 100% (1266497/1266497), 1.40 GiB | 41.15 MiB/s
-Receiving objects: 100% (1266497/1266497), 1.42 GiB | 41.21 MiB/s, done.
+Receiving objects: 100% (1266497/1266497), 1.41 GiB | 38.23 MiB/s
+Receiving objects: 100% (1266497/1266497), 1.42 GiB | 38.76 MiB/s, done.
 Resolving deltas:   0% (0/1030268)
 Resolving deltas:   1% (10303/1030268)
 Resolving deltas:   2% (20606/1030268)
 Resolving deltas:   3% (30909/1030268)
-Resolving deltas:   3% (38323/1030268)
+Resolving deltas:   3% (39725/1030268)
 Resolving deltas:   4% (41211/1030268)
 Resolving deltas:   5% (51514/1030268)
 Resolving deltas:   6% (61817/1030268)
 Resolving deltas:   7% (72119/1030268)
 Resolving deltas:   8% (82422/1030268)
-Resolving deltas:   8% (88309/1030268)
+Resolving deltas:   8% (90596/1030268)
 Resolving deltas:   9% (92725/1030268)
 Resolving deltas:  10% (103027/1030268)
 Resolving deltas:  11% (113330/1030268)
 Resolving deltas:  12% (123633/1030268)
 Resolving deltas:  13% (133935/1030268)
-Resolving deltas:  13% (142543/1030268)
 Resolving deltas:  14% (144238/1030268)
+Resolving deltas:  14% (149947/1030268)
 Resolving deltas:  15% (154541/1030268)
 Resolving deltas:  16% (164843/1030268)
 Resolving deltas:  17% (175146/1030268)
 Resolving deltas:  18% (185449/1030268)
-Resolving deltas:  18% (191068/1030268)
+Resolving deltas:  18% (193433/1030268)
 Resolving deltas:  19% (195751/1030268)
 Resolving deltas:  20% (206054/1030268)
-Resolving deltas:  21% (216358/1030268)
+Resolving deltas:  21% (216357/1030268)
 Resolving deltas:  22% (226659/1030268)
-Resolving deltas:  22% (229467/1030268)
 Resolving deltas:  23% (236962/1030268)
+Resolving deltas:  23% (247012/1030268)
 Resolving deltas:  24% (247265/1030268)
 Resolving deltas:  25% (257567/1030268)
 Resolving deltas:  26% (267870/1030268)
 Resolving deltas:  27% (278173/1030268)
-Resolving deltas:  27% (284805/1030268)
 Resolving deltas:  28% (288476/1030268)
 Resolving deltas:  29% (298778/1030268)
+Resolving deltas:  29% (304853/1030268)
 Resolving deltas:  30% (309081/1030268)
 Resolving deltas:  31% (319384/1030268)
 Resolving deltas:  32% (329686/1030268)
-Resolving deltas:  32% (335870/1030268)
 Resolving deltas:  33% (339989/1030268)
 Resolving deltas:  34% (350292/1030268)
+Resolving deltas:  34% (354094/1030268)
 Resolving deltas:  35% (360594/1030268)
 Resolving deltas:  36% (370897/1030268)
 Resolving deltas:  37% (381200/1030268)
-Resolving deltas:  37% (385496/1030268)
 Resolving deltas:  38% (391502/1030268)
 Resolving deltas:  39% (401805/1030268)
 Resolving deltas:  40% (412108/1030268)
 Resolving deltas:  41% (422410/1030268)
+Resolving deltas:  41% (427286/1030268)
 Resolving deltas:  42% (432713/1030268)
-Resolving deltas:  42% (440218/1030268)
 Resolving deltas:  43% (443016/1030268)
 Resolving deltas:  44% (453318/1030268)
 Resolving deltas:  45% (463621/1030268)
 Resolving deltas:  46% (473924/1030268)
 Resolving deltas:  47% (484226/1030268)
-Resolving deltas:  47% (492483/1030268)
+Resolving deltas:  47% (491115/1030268)
 Resolving deltas:  48% (494529/1030268)
 Resolving deltas:  49% (504832/1030268)
 Resolving deltas:  50% (515134/1030268)
@@ -278,147 +278,150 @@ Resolving deltas:  51% (525437/1030268)
 Resolving deltas:  52% (535740/1030268)
 Resolving deltas:  53% (546043/1030268)
 Resolving deltas:  54% (556345/1030268)
-Resolving deltas:  54% (559279/1030268)
+Resolving deltas:  54% (560207/1030268)
 Resolving deltas:  55% (566648/1030268)
-Resolving deltas:  55% (569642/1030268)
+Resolving deltas:  55% (570305/1030268)
 Resolving deltas:  56% (576951/1030268)
-Resolving deltas:  56% (580367/1030268)
+Resolving deltas:  56% (580292/1030268)
 Resolving deltas:  57% (587253/1030268)
-Resolving deltas:  57% (593449/1030268)
-Resolving deltas:  57% (596570/1030268)
+Resolving deltas:  57% (593350/1030268)
+Resolving deltas:  57% (596506/1030268)
+Resolving deltas:  57% (597522/1030268)
 Resolving deltas:  58% (597556/1030268)
-Resolving deltas:  58% (597615/1030268)
-Resolving deltas:  58% (598915/1030268)
-Resolving deltas:  58% (601501/1030268)
-Resolving deltas:  58% (603748/1030268)
+Resolving deltas:  58% (599035/1030268)
+Resolving deltas:  58% (601107/1030268)
+Resolving deltas:  58% (603076/1030268)
 Resolving deltas:  59% (607859/1030268)
-Resolving deltas:  60% (618161/1030268)
-Resolving deltas:  60% (620275/1030268)
+Resolving deltas:  59% (615601/1030268)
+Resolving deltas:  60% (618162/1030268)
 Resolving deltas:  61% (628464/1030268)
 Resolving deltas:  62% (638767/1030268)
 Resolving deltas:  63% (649069/1030268)
-Resolving deltas:  63% (651963/1030268)
+Resolving deltas:  63% (651943/1030268)
 Resolving deltas:  64% (659372/1030268)
-Resolving deltas:  64% (668856/1030268)
+Resolving deltas:  64% (666584/1030268)
 Resolving deltas:  65% (669675/1030268)
-Resolving deltas:  65% (675425/1030268)
+Resolving deltas:  65% (674228/1030268)
 Resolving deltas:  66% (679977/1030268)
-Resolving deltas:  66% (684512/1030268)
-Resolving deltas:  66% (687319/1030268)
-Resolving deltas:  66% (689100/1030268)
+Resolving deltas:  66% (682925/1030268)
+Resolving deltas:  66% (686549/1030268)
+Resolving deltas:  66% (688571/1030268)
 Resolving deltas:  67% (690280/1030268)
-Resolving deltas:  67% (692617/1030268)
+Resolving deltas:  67% (690374/1030268)
+Resolving deltas:  67% (697566/1030268)
 Resolving deltas:  68% (700583/1030268)
-Resolving deltas:  68% (703999/1030268)
-Resolving deltas:  68% (709665/1030268)
+Resolving deltas:  68% (708244/1030268)
 Resolving deltas:  69% (710885/1030268)
-Resolving deltas:  69% (716076/1030268)
-Resolving deltas:  70% (721188/1030268)
-Resolving deltas:  70% (727961/1030268)
+Resolving deltas:  69% (710899/1030268)
+Resolving deltas:  70% (721189/1030268)
+Resolving deltas:  70% (722674/1030268)
+Resolving deltas:  70% (729724/1030268)
 Resolving deltas:  71% (731491/1030268)
-Resolving deltas:  71% (733265/1030268)
-Resolving deltas:  72% (741793/1030268)
-Resolving deltas:  72% (743572/1030268)
-Resolving deltas:  72% (748656/1030268)
+Resolving deltas:  71% (736787/1030268)
+Resolving deltas:  72% (741794/1030268)
+Resolving deltas:  72% (745166/1030268)
+Resolving deltas:  72% (749563/1030268)
 Resolving deltas:  73% (752096/1030268)
-Resolving deltas:  73% (752214/1030268)
-Resolving deltas:  73% (758645/1030268)
+Resolving deltas:  73% (752813/1030268)
+Resolving deltas:  73% (760474/1030268)
 Resolving deltas:  74% (762399/1030268)
-Resolving deltas:  74% (769757/1030268)
+Resolving deltas:  74% (770808/1030268)
 Resolving deltas:  75% (772701/1030268)
-Resolving deltas:  75% (778930/1030268)
+Resolving deltas:  75% (781720/1030268)
 Resolving deltas:  76% (783004/1030268)
-Resolving deltas:  76% (792289/1030268)
+Resolving deltas:  76% (792561/1030268)
 Resolving deltas:  77% (793307/1030268)
-Resolving deltas:  77% (798419/1030268)
+Resolving deltas:  77% (798525/1030268)
 Resolving deltas:  78% (803610/1030268)
-Resolving deltas:  78% (809178/1030268)
+Resolving deltas:  78% (809401/1030268)
 Resolving deltas:  79% (813912/1030268)
-Resolving deltas:  79% (814327/1030268)
-Resolving deltas:  79% (820647/1030268)
+Resolving deltas:  79% (814282/1030268)
+Resolving deltas:  79% (820444/1030268)
 Resolving deltas:  80% (824215/1030268)
-Resolving deltas:  80% (829508/1030268)
+Resolving deltas:  80% (828788/1030268)
 Resolving deltas:  81% (834518/1030268)
-Resolving deltas:  81% (838826/1030268)
+Resolving deltas:  81% (838004/1030268)
 Resolving deltas:  82% (844820/1030268)
-Resolving deltas:  82% (845948/1030268)
-Resolving deltas:  82% (851387/1030268)
+Resolving deltas:  82% (845424/1030268)
+Resolving deltas:  82% (850821/1030268)
 Resolving deltas:  83% (855123/1030268)
-Resolving deltas:  83% (857927/1030268)
+Resolving deltas:  83% (857406/1030268)
+Resolving deltas:  83% (864144/1030268)
 Resolving deltas:  84% (865426/1030268)
-Resolving deltas:  84% (865756/1030268)
-Resolving deltas:  84% (871414/1030268)
+Resolving deltas:  84% (868211/1030268)
 Resolving deltas:  85% (875728/1030268)
-Resolving deltas:  85% (877465/1030268)
-Resolving deltas:  85% (878803/1030268)
+Resolving deltas:  85% (877154/1030268)
+Resolving deltas:  85% (878490/1030268)
+Resolving deltas:  85% (883577/1030268)
 Resolving deltas:  86% (886031/1030268)
-Resolving deltas:  86% (886838/1030268)
-Resolving deltas:  86% (896280/1030268)
+Resolving deltas:  86% (893711/1030268)
 Resolving deltas:  87% (896334/1030268)
-Resolving deltas:  87% (903427/1030268)
+Resolving deltas:  87% (900588/1030268)
 Resolving deltas:  88% (906636/1030268)
-Resolving deltas:  88% (912904/1030268)
-Resolving deltas:  88% (913525/1030268)
-Resolving deltas:  88% (914181/1030268)
-Resolving deltas:  88% (914877/1030268)
-Resolving deltas:  88% (915621/1030268)
-Resolving deltas:  88% (916384/1030268)
+Resolving deltas:  88% (909557/1030268)
+Resolving deltas:  88% (913244/1030268)
+Resolving deltas:  88% (913843/1030268)
+Resolving deltas:  88% (914498/1030268)
+Resolving deltas:  88% (915187/1030268)
+Resolving deltas:  88% (915904/1030268)
+Resolving deltas:  88% (916659/1030268)
 Resolving deltas:  89% (916939/1030268)
-Resolving deltas:  89% (917219/1030268)
-Resolving deltas:  89% (918274/1030268)
+Resolving deltas:  89% (917489/1030268)
+Resolving deltas:  89% (920601/1030268)
 Resolving deltas:  90% (927242/1030268)
-Resolving deltas:  90% (930828/1030268)
+Resolving deltas:  90% (932825/1030268)
 Resolving deltas:  91% (937544/1030268)
-Resolving deltas:  91% (940065/1030268)
+Resolving deltas:  91% (943353/1030268)
 Resolving deltas:  92% (947847/1030268)
-Resolving deltas:  92% (954201/1030268)
-Resolving deltas:  93% (958151/1030268)
-Resolving deltas:  93% (965435/1030268)
-Resolving deltas:  93% (968348/1030268)
+Resolving deltas:  92% (957451/1030268)
+Resolving deltas:  93% (958150/1030268)
+Resolving deltas:  93% (966553/1030268)
 Resolving deltas:  94% (968452/1030268)
-Resolving deltas:  94% (970688/1030268)
-Resolving deltas:  94% (972006/1030268)
-Resolving deltas:  94% (973650/1030268)
+Resolving deltas:  94% (968801/1030268)
+Resolving deltas:  94% (970826/1030268)
+Resolving deltas:  94% (972140/1030268)
+Resolving deltas:  94% (974334/1030268)
 Resolving deltas:  95% (978755/1030268)
-Resolving deltas:  95% (979343/1030268)
-Resolving deltas:  95% (985489/1030268)
+Resolving deltas:  95% (979520/1030268)
+Resolving deltas:  95% (985301/1030268)
 Resolving deltas:  96% (989058/1030268)
-Resolving deltas:  96% (992849/1030268)
-Resolving deltas:  96% (997793/1030268)
+Resolving deltas:  96% (991988/1030268)
+Resolving deltas:  96% (997652/1030268)
 Resolving deltas:  97% (999360/1030268)
-Resolving deltas:  97% (1001427/1030268)
+Resolving deltas:  97% (1000917/1030268)
+Resolving deltas:  97% (1006958/1030268)
 Resolving deltas:  98% (1009663/1030268)
-Resolving deltas:  98% (1010291/1030268)
-Resolving deltas:  98% (1019163/1030268)
+Resolving deltas:  98% (1018814/1030268)
 Resolving deltas:  99% (1019966/1030268)
-Resolving deltas:  99% (1024147/1030268)
+Resolving deltas:  99% (1023100/1030268)
 Resolving deltas: 100% (1030268/1030268)
 Resolving deltas: 100% (1030268/1030268), done.
-[0:04:40] Still working on:
-[0:04:40]   v8
-[0:04:40] Still working on:
-[0:04:40]   v8
-[0:04:40] Still working on:
-[0:04:40]   v8
-________ running 'python3 third_party/depot_tools/update_depot_tools_toggle.py --disable' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-________ running 'python3 build/landmines.py --landmine-scripts tools/get_landmines.py' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-________ running 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume -u --bucket v8-wasm-spec-tests -s test/wasm-spec-tests/tests.tar.gz.sha1' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
+[0:02:40] Still working on:
+[0:02:40]   v8
+[0:02:49] Still working on:
+[0:02:49]   v8
+[0:02:49] Still working on:
+[0:02:49]   v8
+________ running 'python3 third_party/depot_tools/update_depot_tools_toggle.py --disable' in 'C:\Users\runneradmin\v8\v8'
+________ running 'python3 build/landmines.py --landmine-scripts tools/get_landmines.py' in 'C:\Users\runneradmin\v8\v8'
+________ running 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume -u --bucket v8-wasm-spec-tests -s test/wasm-spec-tests/tests.tar.gz.sha1' in 'C:\Users\runneradmin\v8\v8'
 0> Downloading test/wasm-spec-tests/tests.tar.gz@bd7805d59032f25f7a3d7069b189f9e2d87e4f01...
 0> Extracting 572 entries from test/wasm-spec-tests/tests.tar.gz to test/wasm-spec-tests/tests
-Downloading 1 files took 6.475870 second(s)
-________ running 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume -u --bucket v8-wasm-spec-tests -s test/wasm-js/tests.tar.gz.sha1' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
+Downloading 1 files took 12.465970 second(s)
+Hook 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume -u --bucket v8-wasm-spec-tests -s test/wasm-spec-tests/tests.tar.gz.sha1' took 12.97 secs
+________ running 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume -u --bucket v8-wasm-spec-tests -s test/wasm-js/tests.tar.gz.sha1' in 'C:\Users\runneradmin\v8\v8'
 0> Downloading test/wasm-js/tests.tar.gz@fa1dbb5717f58043b2d3c01c4c331b206adedac8...
 0> Extracting 240 entries from test/wasm-js/tests.tar.gz to test/wasm-js/tests
-Downloading 1 files took 2.813893 second(s)
-________ running 'python3 build/vs_toolchain.py update --force' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-________ running 'python3 build/util/lastchange.py -o build/util/LASTCHANGE' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-________ running 'vpython3.bat -vpython-spec .vpython3 -vpython-tool install' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-Hook 'vpython3.bat -vpython-spec .vpython3 -vpython-tool install' took 11.35 secs
-________ running 'python3 buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance projects/rbe-chrome-untrusted/instances/default_instance --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project  --skip_remoteexec_cfg_fetch' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-generate reproxy.cfg using D:\a\AutoMyView8\AutoMyView8\v8\v8\buildtools\reclient_cfgs\reproxy_cfg_templates\reproxy.cfg.template
-________ running 'python3 build/config/siso/configure_siso.py --rbe_instance projects/rbe-chrome-untrusted/instances/default_instance' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-Running: 'C:\Users\runneradmin\AppData\Local\vpython-root.0\store\python_venv-1d4q4uqvvqiv2l08hv3ugmnuvs\contents\Scripts\python3.exe' 'D:\a\AutoMyView8\AutoMyView8\depot_tools\gclient.py' root
-Running: 'C:\Users\runneradmin\AppData\Local\vpython-root.0\store\python_venv-1d4q4uqvvqiv2l08hv3ugmnuvs\contents\Scripts\python3.exe' 'D:\a\AutoMyView8\AutoMyView8\depot_tools\gclient.py' config --spec 'solutions = [
+Downloading 1 files took 2.912343 second(s)
+________ running 'python3 build/vs_toolchain.py update --force' in 'C:\Users\runneradmin\v8\v8'
+________ running 'python3 build/util/lastchange.py -o build/util/LASTCHANGE' in 'C:\Users\runneradmin\v8\v8'
+________ running 'vpython3.bat -vpython-spec .vpython3 -vpython-tool install' in 'C:\Users\runneradmin\v8\v8'
+Hook 'vpython3.bat -vpython-spec .vpython3 -vpython-tool install' took 13.11 secs
+________ running 'python3 buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance projects/rbe-chrome-untrusted/instances/default_instance --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project  --skip_remoteexec_cfg_fetch' in 'C:\Users\runneradmin\v8\v8'
+generate reproxy.cfg using C:\Users\runneradmin\v8\v8\buildtools\reclient_cfgs\reproxy_cfg_templates\reproxy.cfg.template
+________ running 'python3 build/config/siso/configure_siso.py --rbe_instance projects/rbe-chrome-untrusted/instances/default_instance' in 'C:\Users\runneradmin\v8\v8'
+Running: 'C:\Users\runneradmin\AppData\Local\vpython-root.0\store\python_venv-1d4q4uqvvqiv2l08hv3ugmnuvs\contents\Scripts\python3.exe' 'C:\Users\runneradmin\depot_tools\gclient.py' root
+Running: 'C:\Users\runneradmin\AppData\Local\vpython-root.0\store\python_venv-1d4q4uqvvqiv2l08hv3ugmnuvs\contents\Scripts\python3.exe' 'C:\Users\runneradmin\depot_tools\gclient.py' config --spec 'solutions = [
   {
     "name": "v8",
     "url": "https://chromium.googlesource.com/v8/v8.git",
@@ -428,7 +431,7 @@ Running: 'C:\Users\runneradmin\AppData\Local\vpython-root.0\store\python_venv-1d
   },
 ]
 '
-Running: 'C:\Users\runneradmin\AppData\Local\vpython-root.0\store\python_venv-1d4q4uqvvqiv2l08hv3ugmnuvs\contents\Scripts\python3.exe' 'D:\a\AutoMyView8\AutoMyView8\depot_tools\gclient.py' sync --with_branch_heads
+Running: 'C:\Users\runneradmin\AppData\Local\vpython-root.0\store\python_venv-1d4q4uqvvqiv2l08hv3ugmnuvs\contents\Scripts\python3.exe' 'C:\Users\runneradmin\depot_tools\gclient.py' sync --with_branch_heads
 Running: git config --add remote.origin.fetch '+refs/tags/*:refs/tags/*'
 Running: git config diff.ignoreSubmodules dirty
 =====[ Checking out V8 13.6.233.17 ]=====
@@ -453,32 +456,32 @@ WARNING: 'v8\third_party\libpfm4' is no longer part of this client.
 It is recommended that you manually remove it or use 'gclient sync -D' next time.
 WARNING: 'v8\third_party\dragonbox\src' is no longer part of this client.
 It is recommended that you manually remove it or use 'gclient sync -D' next time.
-________ running 'python3 third_party/depot_tools/update_depot_tools_toggle.py --disable' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-________ running 'python3 build/landmines.py --landmine-scripts tools/get_landmines.py' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-________ running 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth -u --bucket v8-wasm-spec-tests -s test/wasm-spec-tests/tests.tar.gz.sha1' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
+________ running 'python3 third_party/depot_tools/update_depot_tools_toggle.py --disable' in 'C:\Users\runneradmin\v8\v8'
+________ running 'python3 build/landmines.py --landmine-scripts tools/get_landmines.py' in 'C:\Users\runneradmin\v8\v8'
+________ running 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth -u --bucket v8-wasm-spec-tests -s test/wasm-spec-tests/tests.tar.gz.sha1' in 'C:\Users\runneradmin\v8\v8'
 0> Downloading test/wasm-spec-tests/tests.tar.gz@e8f855c3f80301e3f127eaf18ba426dd6208c4bb...
 0> Removed test/wasm-spec-tests/tests...
 0> Extracting 483 entries from test/wasm-spec-tests/tests.tar.gz to test/wasm-spec-tests/tests
-Downloading 1 files took 27.384578 second(s)
-Hook 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth -u --bucket v8-wasm-spec-tests -s test/wasm-spec-tests/tests.tar.gz.sha1' took 27.46 secs
-________ running 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth -u --bucket v8-wasm-spec-tests -s test/wasm-js/tests.tar.gz.sha1' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
+Downloading 1 files took 33.953752 second(s)
+Hook 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth -u --bucket v8-wasm-spec-tests -s test/wasm-spec-tests/tests.tar.gz.sha1' took 34.05 secs
+________ running 'python3 third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth -u --bucket v8-wasm-spec-tests -s test/wasm-js/tests.tar.gz.sha1' in 'C:\Users\runneradmin\v8\v8'
 0> Downloading test/wasm-js/tests.tar.gz@8a69e14a26326662093099426eff78db6d409761...
 0> Removed test/wasm-js/tests...
 0> Extracting 252 entries from test/wasm-js/tests.tar.gz to test/wasm-js/tests
-Downloading 1 files took 2.318101 second(s)
-________ running 'python3 build/vs_toolchain.py update --force' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-________ running 'python3 build/util/lastchange.py -o build/util/LASTCHANGE' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-________ running 'vpython3.bat -vpython-spec .vpython3 -vpython-tool install' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-Hook 'vpython3.bat -vpython-spec .vpython3 -vpython-tool install' took 11.58 secs
-________ running 'python3 buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance projects/rbe-chrome-untrusted/instances/default_instance --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project  --skip_remoteexec_cfg_fetch' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
-generate reproxy.cfg using D:\a\AutoMyView8\AutoMyView8\v8\v8\buildtools\reclient_cfgs\reproxy_cfg_templates\reproxy.cfg.template
-________ running 'python3 build/config/siso/configure_siso.py --rbe_instance projects/rbe-chrome-untrusted/instances/default_instance' in 'D:\a\AutoMyView8\AutoMyView8\v8\v8'
+Downloading 1 files took 2.429633 second(s)
+________ running 'python3 build/vs_toolchain.py update --force' in 'C:\Users\runneradmin\v8\v8'
+________ running 'python3 build/util/lastchange.py -o build/util/LASTCHANGE' in 'C:\Users\runneradmin\v8\v8'
+________ running 'vpython3.bat -vpython-spec .vpython3 -vpython-tool install' in 'C:\Users\runneradmin\v8\v8'
+Hook 'vpython3.bat -vpython-spec .vpython3 -vpython-tool install' took 11.70 secs
+________ running 'python3 buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance projects/rbe-chrome-untrusted/instances/default_instance --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project  --skip_remoteexec_cfg_fetch' in 'C:\Users\runneradmin\v8\v8'
+generate reproxy.cfg using C:\Users\runneradmin\v8\v8\buildtools\reclient_cfgs\reproxy_cfg_templates\reproxy.cfg.template
+________ running 'python3 build/config/siso/configure_siso.py --rbe_instance projects/rbe-chrome-untrusted/instances/default_instance' in 'C:\Users\runneradmin\v8\v8'
 =====[ Applying v8.patch ]=====
 =====[ V8 Patch Application - Multi-level Fallback ]=====
 Patch 文件: D:\a\AutoMyView8\AutoMyView8\Disassembler\v8.patch
-V8 目录: D:\a\AutoMyView8\AutoMyView8\v8\v8
+V8 目录: C:\Users\runneradmin\v8\v8
 日志文件: D:\a\AutoMyView8\AutoMyView8\scripts\v8dasm-builders\patch-utils\patch-state.log
 失败时中止: true
-时间戳: Sun 04/19/2026 16:04:17.82
+时间戳: Sun 04/19/2026 16:24:55.00
 [第0级] 重置 V8 仓库到干净状态...
 Error: Process completed with exit code 1.

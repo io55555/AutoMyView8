@@ -225,11 +225,11 @@ if /i "%ABORT_ON_FAILURE%"=="true" (
 :do_reset
 echo [第0级] 重置 V8 仓库到干净状态...
 echo [第0级] 重置 V8 仓库到干净状态... >> "%LOG_FILE%"
-cd /d "%V8_DIR%"
+pushd "%V8_DIR%" >nul 2>&1
 if errorlevel 1 (
     echo [RESET] 无法进入 V8 目录: %V8_DIR%
     echo [RESET] 无法进入 V8 目录: %V8_DIR% >> "%LOG_FILE%"
-    goto :eof
+    exit /b 1
 )
 
 git diff --quiet >nul 2>&1
@@ -247,9 +247,11 @@ if errorlevel 1 (
     echo [RESET] 仓库已经是干净状态 >> "%LOG_FILE%"
 )
 
+popd
 exit /b 0
 
 :do_reset_failed
 echo [RESET] 重置失败
 echo [RESET] 重置失败 >> "%LOG_FILE%"
+popd
 exit /b 1
