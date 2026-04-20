@@ -16,6 +16,7 @@ set PATCH_FILE=%~1
 set V8_DIR=%~2
 set LOG_FILE=%~3
 set ABORT_ON_FAILURE=%~4
+set PATCH_STATUS=failed
 if "%ABORT_ON_FAILURE%"=="" set ABORT_ON_FAILURE=true
 
 REM 参数验证
@@ -68,6 +69,8 @@ echo 失败时中止: %ABORT_ON_FAILURE%
 echo 时间戳: %date% %time%
 echo.
 
+call :log_status
+
 REM 第0级：强制重置到干净状态
 call :do_reset
 
@@ -78,8 +81,10 @@ cd /d "%V8_DIR%"
 
 git apply --check --reverse "%PATCH_FILE%" >nul 2>&1
 if not errorlevel 1 (
+    set PATCH_STATUS=already_applied
     echo [检查] Patch 已经应用过，跳过
     echo [检查] Patch 已经应用过，跳过 >> "%LOG_FILE%"
+    call :log_status
     exit /b 0
 )
 
@@ -99,8 +104,12 @@ if not errorlevel 1 (
     echo [LEVEL 1] Patch 检查通过，正在应用... >> "%LOG_FILE%"
     git apply --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
     if not errorlevel 1 (
+        set PATCH_STATUS=applied_git
+        call :verify_patch_state
+        if errorlevel 1 goto :verification_failed
         echo [LEVEL 1] 成功: Patch 已通过 git apply 应用
         echo [LEVEL 1] 成功: Patch 已通过 git apply 应用 >> "%LOG_FILE%"
+        call :log_status
         exit /b 0
     )
 )
@@ -122,8 +131,12 @@ git apply -3 --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
     git diff --check 2>&1 | findstr /C:"conflict" >nul
     if errorlevel 1 (
+        set PATCH_STATUS=applied_3way
+        call :verify_patch_state
+        if errorlevel 1 goto :verification_failed
         echo [LEVEL 2] 成功: Patch 已通过三向合并应用
         echo [LEVEL 2] 成功: Patch 已通过三向合并应用 >> "%LOG_FILE%"
+        call :log_status
         exit /b 0
     ) else (
         echo [LEVEL 2] 三向合并产生了冲突
@@ -146,8 +159,12 @@ cd /d "%V8_DIR%"
 
 git apply --ignore-whitespace --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
+    set PATCH_STATUS=applied_ignore_whitespace
+    call :verify_patch_state
+    if errorlevel 1 goto :verification_failed
     echo [LEVEL 3] 成功: Patch 已通过 --ignore-whitespace 应用
     echo [LEVEL 3] 成功: Patch 已通过 --ignore-whitespace 应用 >> "%LOG_FILE%"
+    call :log_status
     exit /b 0
 )
 
@@ -189,13 +206,23 @@ echo [LEVEL 4] 正在执行语义化替换脚本...
 echo [LEVEL 4] 正在执行语义化替换脚本... >> "%LOG_FILE%"
 %PYTHON_CMD% "%SEMANTIC_SCRIPT%" "%V8_DIR%" "%LOG_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
+    set PATCH_STATUS=applied_semantic
+    call :verify_patch_state
+    if errorlevel 1 goto :verification_failed
     echo [LEVEL 4] 成功: Patch 已通过语义化替换应用
     echo [LEVEL 4] 成功: Patch 已通过语义化替换应用 >> "%LOG_FILE%"
+    call :log_status
     exit /b 0
 )
 
 echo [LEVEL 4] 语义化替换失败
 echo [LEVEL 4] 语义化替换失败 >> "%LOG_FILE%"
+
+:verification_failed
+echo [VERIFY] Patch 状态验证失败
+echo [VERIFY] Patch 状态验证失败 >> "%LOG_FILE%"
+set PATCH_STATUS=failed_verification
+call :log_status
 
 :all_failed
 echo. >> "%LOG_FILE%"
@@ -208,6 +235,7 @@ echo ========================================
 echo 失败: 所有 patch 应用方法都失败了
 echo ========================================
 
+call :log_status
 if /i "%ABORT_ON_FAILURE%"=="true" (
     echo 由于 patch 应用失败，构建已中止
     echo 请检查日志文件: %LOG_FILE%
@@ -254,4 +282,26 @@ if errorlevel 1 (
 echo [RESET] 仓库已重置到干净状态
 echo [RESET] 仓库已重置到干净状态 >> "%LOG_FILE%"
 popd
+exit /b 0
+
+:verify_patch_state
+git apply --check --reverse "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
+if not errorlevel 1 (
+    echo [VERIFY] git apply --check --reverse 成功
+    echo [VERIFY] git apply --check --reverse 成功 >> "%LOG_FILE%"
+    exit /b 0
+)
+
+echo [VERIFY] 反向 patch 校验失败，尝试语义校验
+echo [VERIFY] 反向 patch 校验失败，尝试语义校验 >> "%LOG_FILE%"
+%PYTHON_CMD% "%SEMANTIC_SCRIPT%" --verify "%V8_DIR%" "%LOG_FILE%" >> "%LOG_FILE%" 2>&1
+if errorlevel 1 exit /b 1
+
+echo [VERIFY] 语义校验成功
+echo [VERIFY] 语义校验成功 >> "%LOG_FILE%"
+exit /b 0
+
+:log_status
+echo PATCH_STATUS=%PATCH_STATUS%
+echo PATCH_STATUS=%PATCH_STATUS% >> "%LOG_FILE%"
 exit /b 0

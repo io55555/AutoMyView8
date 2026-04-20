@@ -1,0 +1,4 @@
+2026-04-19T19:51:29.3180000Z Evaluating release.if
+2026-04-19T19:51:29.3180000Z Evaluating: (success() && (((github.event_name == 'push') && (github.ref == 'refs/heads/main'))))
+2026-04-19T19:51:29.3180000Z Expanded: (false && ((github.event_name == 'push') && (github.ref == 'refs/heads/main')))
+2026-04-19T19:51:29.3180000Z Result: false

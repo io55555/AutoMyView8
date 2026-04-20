@@ -4,31 +4,34 @@ setlocal enabledelayedexpansion
 set V8_VERSION=%~1
 set BUILD_ARGS=%~2
 
-echo ==========================================
-echo Building v8dasm for Windows x64
-echo V8 Version: %V8_VERSION%
-echo Build Args: %BUILD_ARGS%
-echo ==========================================
-
 if "%V8_VERSION%"=="" (
     echo ERROR: Missing V8 version argument.
     exit /b 1
 )
 
-REM 检测运行环境 (GitHub Actions 或本地)
 if "%GITHUB_WORKSPACE%"=="" (
-    echo 检测到本地环境
     set WORKSPACE_DIR=%~dp0\..\..
     set IS_LOCAL=true
-    echo 本地环境，跳过依赖安装 (请确保已安装: git, python, Visual Studio/clang^)
 ) else (
-    echo 检测到 GitHub Actions 环境
     set WORKSPACE_DIR=%GITHUB_WORKSPACE%
     set IS_LOCAL=false
 )
 
 for %%I in ("%WORKSPACE_DIR%") do set WORKSPACE_DIR=%%~fI
-echo 工作空间: %WORKSPACE_DIR%
+
+if "%V8_BUILD_ROOT%"=="" (
+    if /i "%IS_LOCAL%"=="false" (
+        set BUILD_ROOT=%RUNNER_TEMP%\v8dasm-%V8_VERSION%
+    ) else (
+        set BUILD_ROOT=%USERPROFILE%\v8dasm-build\%V8_VERSION%
+    )
+) else (
+    set BUILD_ROOT=%V8_BUILD_ROOT%
+)
+
+for %%I in ("%BUILD_ROOT%") do set BUILD_ROOT=%%~fI
+set V8_PARENT_DIR=%BUILD_ROOT%
+set V8_DIR=%V8_PARENT_DIR%\v8
 
 if not exist "%WORKSPACE_DIR%\artifacts" mkdir "%WORKSPACE_DIR%\artifacts"
 if not exist "%WORKSPACE_DIR%\artifacts\logs" mkdir "%WORKSPACE_DIR%\artifacts\logs"
@@ -40,265 +43,211 @@ set GN_LOG=%WORKSPACE_DIR%\artifacts\logs\gn-gen-%V8_VERSION%.log
 set NINJA_LOG=%WORKSPACE_DIR%\artifacts\logs\ninja-%V8_VERSION%.log
 set CLANG_LOG=%WORKSPACE_DIR%\artifacts\logs\clang-%V8_VERSION%.log
 set PATCH_LOG=%WORKSPACE_DIR%\artifacts\logs\patch-%V8_VERSION%.log
+set CHECKOUT_LOG=%WORKSPACE_DIR%\artifacts\logs\checkout-%V8_VERSION%.log
+set STATE_LOG=%WORKSPACE_DIR%\artifacts\logs\state-%V8_VERSION%.log
+set OUTPUT_NAME=v8dasm-%V8_VERSION%.exe
+set OUTPUT_PATH=%WORKSPACE_DIR%\artifacts\%OUTPUT_NAME%
+set PATCH_HELPER=%WORKSPACE_DIR%\scripts\v8dasm-builders\patch-utils\apply-patch.cmd
+set PATCH_FILE=%WORKSPACE_DIR%\Disassembler\v8.patch
+set DASM_SOURCE=%WORKSPACE_DIR%\Disassembler\v8dasm.cpp
 
-del /q "%BUILD_LOG%" "%FETCH_LOG%" "%SYNC_LOG%" "%GN_LOG%" "%NINJA_LOG%" "%CLANG_LOG%" "%PATCH_LOG%" 2>nul
+del /q "%BUILD_LOG%" "%FETCH_LOG%" "%SYNC_LOG%" "%GN_LOG%" "%NINJA_LOG%" "%CLANG_LOG%" "%PATCH_LOG%" "%CHECKOUT_LOG%" "%STATE_LOG%" 2>nul
 
-echo =====[ Environment Summary ]=====
-echo Workspace: %WORKSPACE_DIR%
-echo Home: %HOMEDRIVE%%HOMEPATH%
-echo Runner temp: %RUNNER_TEMP%
-echo BUILD_LOG: %BUILD_LOG%
-echo PATCH_LOG: %PATCH_LOG%
-echo GN_LOG: %GN_LOG%
-echo NINJA_LOG: %NINJA_LOG%
-echo CLANG_LOG: %CLANG_LOG%
-echo =====[ Environment Summary ]===== > "%BUILD_LOG%"
-echo Workspace: %WORKSPACE_DIR% >> "%BUILD_LOG%"
-echo Home: %HOMEDRIVE%%HOMEPATH% >> "%BUILD_LOG%"
-echo Runner temp: %RUNNER_TEMP% >> "%BUILD_LOG%"
-echo PATH: %PATH% >> "%BUILD_LOG%"
-echo GITHUB_WORKSPACE: %GITHUB_WORKSPACE% >> "%BUILD_LOG%"
-echo. >> "%BUILD_LOG%"
+call :log_header
+call :stage "INIT"
+call :log_line "Building v8dasm for Windows x64"
+call :log_line "V8 Version: %V8_VERSION%"
+call :log_line "Build Args: %BUILD_ARGS%"
+call :log_line "Workspace: %WORKSPACE_DIR%"
+call :log_line "Build root: %BUILD_ROOT%"
+call :log_line "V8 parent dir: %V8_PARENT_DIR%"
+call :log_line "V8 dir: %V8_DIR%"
+call :log_line "Output path: %OUTPUT_PATH%"
+call :log_line "Build log: %BUILD_LOG%"
+call :log_line "Patch log: %PATCH_LOG%"
+call :log_line "GN log: %GN_LOG%"
+call :log_line "Ninja log: %NINJA_LOG%"
+call :log_line "Clang log: %CLANG_LOG%"
 
-echo =====[ Tool Versions ]=====
-where git
-git --version
-where python
-python --version
-where clang++
-clang++ --version
-where link
-where gn
-where ninja
-where fetch
-where gclient
-(
-    echo =====[ Tool Versions ]=====
-    where git
-    git --version
-    where python
-    python --version
-    where clang++
-    clang++ --version
-    where link
-    where gn
-    where ninja
-    where fetch
-    where gclient
-) >> "%BUILD_LOG%" 2>&1
-echo. >> "%BUILD_LOG%"
+call :require_tool git
+call :require_tool python
+call :require_tool clang++
+call :require_tool gclient
+call :require_tool fetch
+call :require_tool gn
+call :require_tool ninja
 
-REM 配置 Git
-git config --global user.name "V8 Disassembler Builder"
-git config --global user.email "v8dasm.builder@localhost"
-git config --global core.autocrlf false
-git config --global core.filemode false
+call :append_command_output "%BUILD_LOG%" "where git"
+call :append_command_output "%BUILD_LOG%" "git --version"
+call :append_command_output "%BUILD_LOG%" "where python"
+call :append_command_output "%BUILD_LOG%" "python --version"
+call :append_command_output "%BUILD_LOG%" "where clang++"
+call :append_command_output "%BUILD_LOG%" "clang++ --version"
+call :append_command_output "%BUILD_LOG%" "where gclient"
+call :append_command_output "%BUILD_LOG%" "where fetch"
+call :append_command_output "%BUILD_LOG%" "where gn"
+call :append_command_output "%BUILD_LOG%" "where ninja"
 
-cd /d %HOMEDRIVE%%HOMEPATH%
-echo 当前目录: %CD%
-echo 当前目录: %CD% >> "%BUILD_LOG%"
+set DEPOT_TOOLS_WIN_TOOLCHAIN=0
+set PATH=%USERPROFILE%\depot_tools;%PATH%
+call :log_line "DEPOT_TOOLS_WIN_TOOLCHAIN=%DEPOT_TOOLS_WIN_TOOLCHAIN%"
+call :log_line "PATH head=%USERPROFILE%\depot_tools"
 
-REM 获取 Depot Tools
-if not exist depot_tools (
-    echo =====[ Getting Depot Tools ]=====
-    powershell -command "Invoke-WebRequest https://storage.googleapis.com/chrome-infra/depot_tools.zip -O depot_tools.zip"
-    if errorlevel 1 (
-        echo ERROR: Failed to download depot_tools.
-        exit /b 1
-    )
-    powershell -command "Expand-Archive depot_tools.zip -DestinationPath depot_tools"
-    if errorlevel 1 (
-        echo ERROR: Failed to extract depot_tools.
-        exit /b 1
-    )
-    del depot_tools.zip
+if not exist "%USERPROFILE%\depot_tools" (
+    call :fail "INIT" "depot_tools not found at %USERPROFILE%\depot_tools"
 )
 
-set PATH=%CD%\depot_tools;%PATH%
-set DEPOT_TOOLS_WIN_TOOLCHAIN=0
-echo DEPOT_TOOLS_WIN_TOOLCHAIN=%DEPOT_TOOLS_WIN_TOOLCHAIN%
-echo PATH after depot_tools: %PATH% >> "%BUILD_LOG%"
+if not exist "%V8_PARENT_DIR%" mkdir "%V8_PARENT_DIR%"
+if errorlevel 1 call :fail "INIT" "Failed to create build root %V8_PARENT_DIR%"
 
-echo =====[ Verify depot_tools commands ]=====
-where gclient
-where fetch
-where gn
-where ninja
-where clang++
+call :stage "PREPARE_CHECKOUT"
+if exist "%V8_PARENT_DIR%\.gclient" (
+    call :log_line "Existing .gclient found in build root"
+) else (
+    call :log_line "No .gclient found in build root yet"
+)
 
-REM 创建工作目录
-if not exist v8 mkdir v8
-cd v8
-echo V8 root parent: %CD%
+if exist "%V8_DIR%" (
+    call :log_line "Existing V8 checkout detected"
+    call :append_command_output "%STATE_LOG%" "cmd /d /c dir /a \"%V8_PARENT_DIR%\""
+    if not exist "%V8_DIR%\.git" (
+        call :log_line "Existing V8 dir is missing .git; deleting isolated build root"
+        rmdir /s /q "%V8_PARENT_DIR%"
+        if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to remove invalid build root %V8_PARENT_DIR%"
+        mkdir "%V8_PARENT_DIR%"
+        if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to recreate build root %V8_PARENT_DIR%"
+    )
+)
 
-REM 获取 V8 源码
-if not exist v8 (
-    echo =====[ Fetching V8 ]=====
+pushd "%V8_PARENT_DIR%" >nul 2>&1 || call :fail "PREPARE_CHECKOUT" "Failed to enter %V8_PARENT_DIR%"
+
+if not exist "%V8_DIR%" (
+    call :stage "FETCH"
+    call :log_line "Fetching V8 into %V8_PARENT_DIR%"
     call fetch v8 > "%FETCH_LOG%" 2>&1
     if errorlevel 1 (
-        echo ERROR: fetch v8 failed. Dumping %FETCH_LOG%
-        type "%FETCH_LOG%"
-        exit /b 1
+        popd
+        call :fail_with_log "FETCH" "%FETCH_LOG%" "fetch v8 failed"
     )
-    if not exist .gclient (
-        echo ERROR: fetch v8 succeeded but .gclient was not created.
-        type "%FETCH_LOG%"
-        exit /b 1
+    if not exist "%V8_PARENT_DIR%\.gclient" (
+        popd
+        call :fail_with_log "FETCH" "%FETCH_LOG%" "fetch v8 succeeded but .gclient was not created"
     )
-    echo target_os = ['win'] >> .gclient
 ) else (
-    echo =====[ Reusing existing V8 checkout ]=====
-    dir
+    call :log_line "Reusing isolated V8 checkout"
 )
 
-if exist .gclient (
-    echo =====[ .gclient ]=====
-    type .gclient
-) else (
-    echo WARNING: .gclient not found in %CD%
+if not exist "%V8_PARENT_DIR%\.gclient" (
+    popd
+    call :fail "PREPARE_CHECKOUT" ".gclient missing under %V8_PARENT_DIR%"
 )
 
-cd v8
-set V8_DIR=%CD%
-echo V8_DIR=%V8_DIR%
-echo V8_DIR=%V8_DIR% >> "%BUILD_LOG%"
-
-echo =====[ V8 Repo Status Before Checkout ]=====
-git status --short
-git rev-parse --is-inside-work-tree
-
-REM Checkout 指定版本
-echo =====[ Checking out V8 %V8_VERSION% ]=====
-call git fetch --all --tags
+findstr /c:"target_os = ['win']" "%V8_PARENT_DIR%\.gclient" >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: git fetch --all --tags failed.
-    exit /b 1
+    >> "%V8_PARENT_DIR%\.gclient" echo target_os = ['win']
+    if errorlevel 1 (
+        popd
+        call :fail "PREPARE_CHECKOUT" "Failed to append target_os to .gclient"
+    )
 )
-call git checkout %V8_VERSION%
+
+call :append_file "%BUILD_LOG%" "%V8_PARENT_DIR%\.gclient"
+popd >nul
+
+if not exist "%V8_DIR%" call :fail "FETCH" "V8 directory missing after fetch"
+if not exist "%V8_DIR%\.git" call :fail "PREPARE_CHECKOUT" "%V8_DIR% is not a git repository"
+
+call :stage "CHECKOUT"
+pushd "%V8_DIR%" >nul 2>&1 || call :fail "CHECKOUT" "Failed to enter %V8_DIR%"
+call :append_command_output "%STATE_LOG%" "git status --short"
+git reset --hard HEAD >> "%CHECKOUT_LOG%" 2>&1
 if errorlevel 1 (
-    echo ERROR: git checkout %V8_VERSION% failed.
-    exit /b 1
+    popd
+    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git reset --hard HEAD failed"
 )
-
-echo =====[ Running gclient sync ]=====
-call gclient sync > "%SYNC_LOG%" 2>&1
+git clean -ffd >> "%CHECKOUT_LOG%" 2>&1
 if errorlevel 1 (
-    echo ERROR: gclient sync failed. Dumping %SYNC_LOG%
-    type "%SYNC_LOG%"
-    exit /b 1
+    popd
+    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git clean -ffd failed"
 )
-echo gclient sync completed successfully.
-
-echo =====[ V8 Repo Status After Sync ]=====
-git status --short
-git rev-parse HEAD
-
-REM 应用补丁（内联多级回退，避免外部脚本在 CI 中异常退出）
-echo =====[ Applying v8.patch ]=====
-set PATCH_FILE=%WORKSPACE_DIR%\Disassembler\v8.patch
-
-if not exist "%PATCH_FILE%" (
-    echo ERROR: Patch file not found: %PATCH_FILE%
-    exit /b 1
+git fetch --all --tags >> "%CHECKOUT_LOG%" 2>&1
+if errorlevel 1 (
+    popd
+    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git fetch --all --tags failed"
 )
-
-echo =====[ V8 Patch Application - Inline Fallback ]===== > "%PATCH_LOG%"
-echo Patch 文件: %PATCH_FILE% >> "%PATCH_LOG%"
-echo V8 目录: %V8_DIR% >> "%PATCH_LOG%"
-echo 日志文件: %PATCH_LOG% >> "%PATCH_LOG%"
-echo 时间戳: %DATE% %TIME% >> "%PATCH_LOG%"
-
-cd /d "%V8_DIR%"
-git reset --hard HEAD >> "%PATCH_LOG%" 2>&1
-git clean -fd >> "%PATCH_LOG%" 2>&1
-
-git apply --check --reverse "%PATCH_FILE%" >> "%PATCH_LOG%" 2>&1
-if not errorlevel 1 (
-    echo Patch already applied, skip.
-    echo Patch already applied, skip. >> "%PATCH_LOG%"
-    goto :patch_done
+git checkout %V8_VERSION% >> "%CHECKOUT_LOG%" 2>&1
+if errorlevel 1 (
+    git tag --list "%V8_VERSION%" >> "%CHECKOUT_LOG%" 2>&1
+    git status --short >> "%CHECKOUT_LOG%" 2>&1
+    popd
+    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git checkout %V8_VERSION% failed"
 )
-
-git apply --check "%PATCH_FILE%" >> "%PATCH_LOG%" 2>&1
-if not errorlevel 1 (
-    git apply --verbose "%PATCH_FILE%" >> "%PATCH_LOG%" 2>&1
-    if not errorlevel 1 goto :patch_done
+git rev-parse HEAD >> "%CHECKOUT_LOG%" 2>&1
+if errorlevel 1 (
+    popd
+    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git rev-parse HEAD failed after checkout"
 )
+popd >nul
 
-git apply -3 --verbose "%PATCH_FILE%" >> "%PATCH_LOG%" 2>&1
-if not errorlevel 1 goto :patch_done
+call :stage "SYNC"
+pushd "%V8_DIR%" >nul 2>&1 || call :fail "SYNC" "Failed to enter %V8_DIR%"
+call gclient sync -D > "%SYNC_LOG%" 2>&1
+if errorlevel 1 (
+    popd
+    call :fail_with_log "SYNC" "%SYNC_LOG%" "gclient sync -D failed"
+)
+if not exist "%V8_DIR%\include" (
+    popd
+    call :fail_with_log "SYNC" "%SYNC_LOG%" "V8 include directory missing after sync"
+)
+call :append_command_output "%STATE_LOG%" "git status --short"
+popd >nul
 
-git apply --ignore-whitespace --verbose "%PATCH_FILE%" >> "%PATCH_LOG%" 2>&1
-if not errorlevel 1 goto :patch_done
+if not exist "%PATCH_FILE%" call :fail "PATCH" "Patch file not found: %PATCH_FILE%"
+if not exist "%PATCH_HELPER%" call :fail "PATCH" "Patch helper not found: %PATCH_HELPER%"
 
-python "%WORKSPACE_DIR%\scripts\v8dasm-builders\patch-utils\semantic-patches.py" "%V8_DIR%" "%PATCH_LOG%" >> "%PATCH_LOG%" 2>&1
-if not errorlevel 1 goto :patch_done
+call :stage "PATCH"
+call "%PATCH_HELPER%" "%PATCH_FILE%" "%V8_DIR%" "%PATCH_LOG%" true
+if errorlevel 1 call :fail_with_log "PATCH" "%PATCH_LOG%" "Patch helper failed"
+findstr /c:"PATCH_STATUS=" "%PATCH_LOG%" >nul 2>&1
+if errorlevel 1 call :fail_with_log "PATCH" "%PATCH_LOG%" "Patch helper did not emit PATCH_STATUS"
 
-echo ❌ Patch application failed. Build aborted.
-echo 请检查日志文件: %PATCH_LOG%
-type "%PATCH_LOG%"
-exit /b 1
+if not exist "%DASM_SOURCE%" call :fail "CLANG" "Source file not found: %DASM_SOURCE%"
 
-:patch_done
-echo =====[ Patch Step Completed ]=====
-echo =====[ Patch Log ]=====
-type "%PATCH_LOG%"
-
-REM 配置构建
-echo =====[ Configuring V8 Build ]=====
 set GN_ARGS=target_os=\"win\" target_cpu=\"x64\" is_component_build=false is_debug=false use_custom_libcxx=false v8_monolithic=true v8_static_library=true v8_enable_disassembler=true v8_enable_object_print=true v8_use_external_startup_data=false dcheck_always_on=false symbol_level=0 is_clang=true
+if not "%BUILD_ARGS%"=="" set GN_ARGS=%GN_ARGS% %BUILD_ARGS%
+call :log_line "GN Args: %GN_ARGS%"
 
-REM 如果有额外的构建参数，追加
-if not "%BUILD_ARGS%"=="" (
-    set GN_ARGS=%GN_ARGS% %BUILD_ARGS%
-)
-
-echo GN Args: %GN_ARGS%
-echo GN Args: %GN_ARGS% >> "%BUILD_LOG%"
-
-REM 直接使用 gn gen 生成构建配置
+call :stage "GN"
+pushd "%V8_DIR%" >nul 2>&1 || call :fail "GN" "Failed to enter %V8_DIR%"
 call gn gen out.gn\x64.release --args="%GN_ARGS%" > "%GN_LOG%" 2>&1
 if errorlevel 1 (
-    echo ERROR: gn gen failed. Dumping %GN_LOG%
-    type "%GN_LOG%"
-    exit /b 1
+    popd
+    call :fail_with_log "GN" "%GN_LOG%" "gn gen failed"
 )
-echo gn gen completed successfully.
-type "%GN_LOG%"
+if not exist "%V8_DIR%\out.gn\x64.release\args.gn" (
+    popd
+    call :fail_with_log "GN" "%GN_LOG%" "args.gn missing after gn gen"
+)
+popd >nul
 
-REM 构建 V8 静态库
-echo =====[ Building V8 Monolith ]=====
+call :stage "NINJA"
+pushd "%V8_DIR%" >nul 2>&1 || call :fail "NINJA" "Failed to enter %V8_DIR%"
 call ninja -C out.gn\x64.release v8_monolith > "%NINJA_LOG%" 2>&1
 if errorlevel 1 (
-    echo ERROR: ninja build failed. Dumping %NINJA_LOG%
-    type "%NINJA_LOG%"
-    exit /b 1
+    popd
+    call :fail_with_log "NINJA" "%NINJA_LOG%" "ninja build failed"
 )
-echo ninja completed successfully.
-type "%NINJA_LOG%"
-
-REM 编译 v8dasm
-echo =====[ Compiling v8dasm ]=====
-set DASM_SOURCE=%WORKSPACE_DIR%\Disassembler\v8dasm.cpp
-set OUTPUT_NAME=v8dasm-%V8_VERSION%.exe
-
-if not exist "%DASM_SOURCE%" (
-    echo ERROR: Source file not found: %DASM_SOURCE%
-    exit /b 1
+if not exist "%V8_DIR%\out.gn\x64.release\obj\v8_monolith.lib" (
+    if not exist "%V8_DIR%\out.gn\x64.release\obj\libv8_monolith.a" (
+        popd
+        call :fail_with_log "NINJA" "%NINJA_LOG%" "v8_monolith output not found after ninja"
+    )
 )
+popd >nul
 
-if not "%GITHUB_WORKSPACE%"=="" (
-    if not exist "%GITHUB_WORKSPACE%\artifacts" mkdir "%GITHUB_WORKSPACE%\artifacts"
-    set OUTPUT_PATH=%GITHUB_WORKSPACE%\artifacts\%OUTPUT_NAME%
-) else (
-    set OUTPUT_PATH=%CD%\%OUTPUT_NAME%
-)
-
-echo DASM_SOURCE=%DASM_SOURCE%
-echo OUTPUT_PATH=%OUTPUT_PATH%
-dir include
-dir out.gn\x64.release\obj
-
+call :stage "CLANG"
+pushd "%V8_DIR%" >nul 2>&1 || call :fail "CLANG" "Failed to enter %V8_DIR%"
 clang++ "%DASM_SOURCE%" ^
     -std=c++20 ^
     -O2 ^
@@ -309,23 +258,82 @@ clang++ "%DASM_SOURCE%" ^
     -lv8_monolith ^
     -o "%OUTPUT_PATH%" > "%CLANG_LOG%" 2>&1
 if errorlevel 1 (
-    echo ERROR: clang++ link failed. Dumping %CLANG_LOG%
-    type "%CLANG_LOG%"
-    exit /b 1
+    popd
+    call :fail_with_log "CLANG" "%CLANG_LOG%" "clang++ link failed"
 )
-echo clang++ completed successfully.
-type "%CLANG_LOG%"
+popd >nul
 
-REM 验证编译
-if exist "%OUTPUT_PATH%" (
-    echo =====[ Build Successful ]=====
-    dir "%OUTPUT_PATH%"
-    echo.
-    echo ✅ 编译完成: %OUTPUT_NAME%
-    echo    位置: %OUTPUT_PATH%
-) else (
-    echo ERROR: %OUTPUT_PATH% not found!
-    echo =====[ Artifact Directory Listing ]=====
-    dir "%WORKSPACE_DIR%\artifacts"
-    exit /b 1
+call :stage "VERIFY_ARTIFACT"
+if not exist "%OUTPUT_PATH%" (
+    call :append_command_output "%STATE_LOG%" "cmd /d /c dir /a \"%WORKSPACE_DIR%\artifacts\""
+    call :fail_with_log "VERIFY_ARTIFACT" "%CLANG_LOG%" "Expected artifact not found: %OUTPUT_PATH%"
 )
+call :append_command_output "%STATE_LOG%" "cmd /d /c dir /a \"%WORKSPACE_DIR%\artifacts\""
+call :log_line "Build successful: %OUTPUT_PATH%"
+call :log_line "STATE_LOG: %STATE_LOG%"
+exit /b 0
+
+:log_header
+> "%BUILD_LOG%" echo =====[ Environment Summary ]=====
+>> "%BUILD_LOG%" echo Workspace: %WORKSPACE_DIR%
+>> "%BUILD_LOG%" echo Build root: %BUILD_ROOT%
+>> "%BUILD_LOG%" echo V8 dir: %V8_DIR%
+>> "%BUILD_LOG%" echo Home: %HOMEDRIVE%%HOMEPATH%
+>> "%BUILD_LOG%" echo Runner temp: %RUNNER_TEMP%
+>> "%BUILD_LOG%" echo GITHUB_WORKSPACE: %GITHUB_WORKSPACE%
+>> "%BUILD_LOG%" echo BUILD_LOG: %BUILD_LOG%
+>> "%BUILD_LOG%" echo FETCH_LOG: %FETCH_LOG%
+>> "%BUILD_LOG%" echo CHECKOUT_LOG: %CHECKOUT_LOG%
+>> "%BUILD_LOG%" echo SYNC_LOG: %SYNC_LOG%
+>> "%BUILD_LOG%" echo PATCH_LOG: %PATCH_LOG%
+>> "%BUILD_LOG%" echo GN_LOG: %GN_LOG%
+>> "%BUILD_LOG%" echo NINJA_LOG: %NINJA_LOG%
+>> "%BUILD_LOG%" echo CLANG_LOG: %CLANG_LOG%
+>> "%BUILD_LOG%" echo STATE_LOG: %STATE_LOG%
+>> "%BUILD_LOG%" echo.
+exit /b 0
+
+:stage
+set STAGE_NAME=%~1
+call :log_line "===== [STAGE:%STAGE_NAME%] ====="
+exit /b 0
+
+:log_line
+echo %~1
+>> "%BUILD_LOG%" echo %~1
+exit /b 0
+
+:append_file
+if exist "%~2" (
+    >> "%~1" echo =====[ FILE:%~2 ]=====
+    type "%~2" >> "%~1"
+    >> "%~1" echo.
+)
+exit /b 0
+
+:append_command_output
+>> "%~1" echo =====[ CMD:%~2 ]=====
+cmd /d /c "%~2" >> "%~1" 2>&1
+>> "%~1" echo.
+exit /b 0
+
+:require_tool
+where %~1 >nul 2>&1
+if errorlevel 1 (
+    call :log_line "ERROR[INIT]: Required tool not found: %~1"
+    call :append_command_output "%BUILD_LOG%" "cmd /d /c dir /a \"%WORKSPACE_DIR%\artifacts\""
+    exit 1
+)
+exit /b 0
+
+:fail_with_log
+call :log_line "ERROR[%~1]: %~3"
+call :log_line "See log: %~2"
+if exist "%~2" type "%~2"
+call :append_command_output "%BUILD_LOG%" "cmd /d /c dir /a \"%WORKSPACE_DIR%\artifacts\""
+exit 1
+
+:fail
+call :log_line "ERROR[%~1]: %~2"
+call :append_command_output "%BUILD_LOG%" "cmd /d /c dir /a \"%WORKSPACE_DIR%\artifacts\""
+exit 1

@@ -1,0 +1,59 @@
+﻿2026-04-19T19:46:54.2045455Z ##[group]Run actions/checkout@v4
+2026-04-19T19:46:54.2046659Z with:
+2026-04-19T19:46:54.2047153Z   repository: io55555/AutoMyView8
+2026-04-19T19:46:54.2048050Z   token: ***
+2026-04-19T19:46:54.2048533Z   ssh-strict: true
+2026-04-19T19:46:54.2049026Z   ssh-user: git
+2026-04-19T19:46:54.2049538Z   persist-credentials: true
+2026-04-19T19:46:54.2050116Z   clean: true
+2026-04-19T19:46:54.2050630Z   sparse-checkout-cone-mode: true
+2026-04-19T19:46:54.2051272Z   fetch-depth: 1
+2026-04-19T19:46:54.2051765Z   fetch-tags: false
+2026-04-19T19:46:54.2052273Z   show-progress: true
+2026-04-19T19:46:54.2052796Z   lfs: false
+2026-04-19T19:46:54.2053255Z   submodules: false
+2026-04-19T19:46:54.2053801Z   set-safe-directory: true
+2026-04-19T19:46:54.2054611Z ##[endgroup]
+2026-04-19T19:46:54.3670612Z Syncing repository: io55555/AutoMyView8
+2026-04-19T19:46:54.3673253Z ##[group]Getting Git version info
+2026-04-19T19:46:54.3674257Z Working directory is 'D:\a\AutoMyView8\AutoMyView8'
+2026-04-19T19:46:54.4686290Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-04-19T19:46:54.8342714Z git version 2.53.0.windows.2
+2026-04-19T19:46:54.8390716Z ##[endgroup]
+2026-04-19T19:46:54.8410225Z Temporarily overriding HOME='D:\a\_temp\e768a0e1-d238-414a-adbb-7431794c024a' before making global git config changes
+2026-04-19T19:46:54.8411763Z Adding repository directory to the temporary git global config as a safe directory
+2026-04-19T19:46:54.8421890Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\AutoMyView8\AutoMyView8
+2026-04-19T19:46:54.8935866Z Deleting the contents of 'D:\a\AutoMyView8\AutoMyView8'
+2026-04-19T19:46:54.8941345Z ##[group]Initializing the repository
+2026-04-19T19:46:54.8951406Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\AutoMyView8\AutoMyView8
+2026-04-19T19:46:54.9705997Z Initialized empty Git repository in D:/a/AutoMyView8/AutoMyView8/.git/
+2026-04-19T19:46:54.9745463Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/io55555/AutoMyView8
+2026-04-19T19:46:55.0252679Z ##[endgroup]
+2026-04-19T19:46:55.0253472Z ##[group]Disabling automatic garbage collection
+2026-04-19T19:46:55.0262295Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-04-19T19:46:55.0485667Z ##[endgroup]
+2026-04-19T19:46:55.0486446Z ##[group]Setting up auth
+2026-04-19T19:46:55.0499886Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-04-19T19:46:55.0731890Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-04-19T19:46:56.3967631Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-04-19T19:46:56.4194489Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-04-19T19:46:56.8637421Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-04-19T19:46:56.8939952Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-04-19T19:46:57.3179534Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-04-19T19:46:57.3412659Z ##[endgroup]
+2026-04-19T19:46:57.3413166Z ##[group]Fetching the repository
+2026-04-19T19:46:57.3426364Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +51f816f595d6ba678aba4278c9efae429f28d3f2:refs/remotes/origin/main
+2026-04-19T19:46:58.3054232Z From https://github.com/io55555/AutoMyView8
+2026-04-19T19:46:58.3430003Z  * [new ref]         51f816f595d6ba678aba4278c9efae429f28d3f2 -> origin/main
+2026-04-19T19:46:58.3432531Z ##[endgroup]
+2026-04-19T19:46:58.3433195Z ##[group]Determining the checkout info
+2026-04-19T19:46:58.3434121Z ##[endgroup]
+2026-04-19T19:46:58.3444981Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-04-19T19:46:58.3810376Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-04-19T19:46:58.4054130Z ##[group]Checking out the ref
+2026-04-19T19:46:58.4064466Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
+2026-04-19T19:46:58.4673603Z Switched to a new branch 'main'
+2026-04-19T19:46:58.4692412Z branch 'main' set up to track 'origin/main'.
+2026-04-19T19:46:58.4728917Z ##[endgroup]
+2026-04-19T19:46:58.5079578Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-04-19T19:46:58.5279042Z 51f816f595d6ba678aba4278c9efae429f28d3f2

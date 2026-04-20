@@ -1,0 +1,23 @@
+﻿2026-04-19T19:46:59.0263070Z ##[group]Run actions/cache@v4
+2026-04-19T19:46:59.0263393Z with:
+2026-04-19T19:46:59.0263557Z   path: ~/depot_tools
+2026-04-19T19:46:59.0264592Z   key: depot-tools-windows-Windows
+2026-04-19T19:46:59.0264833Z   enableCrossOsArchive: false
+2026-04-19T19:46:59.0265045Z   fail-on-cache-miss: false
+2026-04-19T19:46:59.0265230Z   lookup-only: false
+2026-04-19T19:46:59.0265401Z   save-always: false
+2026-04-19T19:46:59.0265557Z env:
+2026-04-19T19:46:59.0265779Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-04-19T19:46:59.0266224Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.10\x64/lib/pkgconfig
+2026-04-19T19:46:59.0266647Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-04-19T19:46:59.0267018Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-04-19T19:46:59.0267380Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+2026-04-19T19:46:59.0267661Z ##[endgroup]
+2026-04-19T19:46:59.5408523Z Cache hit for: depot-tools-windows-Windows
+2026-04-19T19:47:00.8235634Z Received 134217728 of 262599660 (51.1%), 111.2 MBs/sec
+2026-04-19T19:47:01.8328989Z Received 258405356 of 262599660 (98.4%), 114.1 MBs/sec
+2026-04-19T19:47:02.0340101Z Received 262599660 of 262599660 (100.0%), 106.1 MBs/sec
+2026-04-19T19:47:02.0346248Z Cache Size: ~250 MB (262599660 B)
+2026-04-19T19:47:02.0486347Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/d3ec2573-7e7e-4761-9d30-398a29801792/cache.tzst -P -C D:/a/AutoMyView8/AutoMyView8 --force-local --use-compress-program "zstd -d"
+2026-04-19T19:47:21.7047451Z Cache restored successfully
+2026-04-19T19:47:21.7295830Z Cache restored from key: depot-tools-windows-Windows

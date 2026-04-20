@@ -17,145 +17,41 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Tuple
 
 
 class SemanticPatcher:
     """语义化 Patch 应用器"""
 
-    def __init__(self, v8_dir: str, log_file: str):
+    def __init__(self, v8_dir: str, log_file: str, verify_only: bool = False):
         self.v8_dir = Path(v8_dir)
         self.log_file = Path(log_file)
-        self.success_count = 0
-        self.failure_count = 0
+        self.verify_only = verify_only
+        self.results: dict[str, str] = {}
 
     def log(self, message: str):
-        """记录日志到文件和标准输出"""
         print(message)
         with open(self.log_file, 'a', encoding='utf-8') as f:
             f.write(message + '\n')
 
-    def patch_string_cc(self) -> bool:
-        """
-        修改 src/objects/string.cc
-        删除字符串截断逻辑（7行代码）
+    def record_result(self, name: str, status: str):
+        self.results[name] = status
+        self.log(f"[SEMANTIC] {name}: {status}")
 
-        原始代码:
-          if (len > kMaxShortPrintLength) {
-            accumulator->Add("...<truncated>>");
-            accumulator->Add(SuffixForDebugPrint());
-            accumulator->Put('>');
-            return;
-          }
-        """
+    def patch_string_cc(self) -> str:
         file_path = self.v8_dir / 'src/objects/string.cc'
-
-        if not file_path.exists():
-            self.log(f"[SEMANTIC] ✗ 文件不存在: {file_path}")
-            return False
-
-        try:
-            content = file_path.read_text(encoding='utf-8')
-        except Exception as e:
-            self.log(f"[SEMANTIC] ✗ 读取文件失败: {e}")
-            return False
-
-        # 匹配要删除的代码块（使用正则，允许空白变化）
-        # 匹配整个 if 块，包括花括号内的所有内容
+        target_marker = 'accumulator->Add("...<truncated>>")'
         pattern = r'\s*if\s*\(\s*len\s*>\s*kMaxShortPrintLength\s*\)\s*\{[^}]*\}\s*\n?'
+        return self._apply_or_verify_block('string.cc', file_path, pattern, '\n', target_marker)
 
-        # 检查是否存在
-        match = re.search(pattern, content, re.DOTALL)
-        if not match:
-            self.log("[SEMANTIC] ⚠️  string.cc: 未找到匹配模式（可能已经应用过）")
-            return True  # 可能已经应用过，返回成功
-
-        # 删除匹配的代码块
-        new_content = re.sub(pattern, '\n', content, flags=re.DOTALL)
-
-        # 验证修改
-        if content == new_content:
-            self.log("[SEMANTIC] ⚠️  string.cc: 内容未改变")
-            return True
-
-        # 写回文件
-        try:
-            file_path.write_text(new_content, encoding='utf-8')
-            self.log("[SEMANTIC] ✅ string.cc 已成功应用语义化 patch")
-            return True
-        except Exception as e:
-            self.log(f"[SEMANTIC] ✗ 写入文件失败: {e}")
-            return False
-
-    def patch_deserializer_cc(self) -> bool:
-        """
-        修改 src/snapshot/deserializer.cc
-        删除魔数检查（1行）
-
-        原始代码:
-          CHECK_EQ(magic_number_, SerializedData::kMagicNumber);
-        """
+    def patch_deserializer_cc(self) -> str:
         file_path = self.v8_dir / 'src/snapshot/deserializer.cc'
-
-        if not file_path.exists():
-            self.log(f"[SEMANTIC] ✗ 文件不存在: {file_path}")
-            return False
-
-        try:
-            content = file_path.read_text(encoding='utf-8')
-        except Exception as e:
-            self.log(f"[SEMANTIC] ✗ 读取文件失败: {e}")
-            return False
-
-        # 匹配要删除的行（允许空白变化）
+        target_marker = 'CHECK_EQ(magic_number_, SerializedData::kMagicNumber);'
         pattern = r'\s*CHECK_EQ\s*\(\s*magic_number_\s*,\s*SerializedData::kMagicNumber\s*\)\s*;?\s*\n?'
+        return self._apply_or_verify_block('deserializer.cc', file_path, pattern, '', target_marker)
 
-        if not re.search(pattern, content):
-            self.log("[SEMANTIC] ⚠️  deserializer.cc: 未找到匹配模式（可能已经应用过）")
-            return True
-
-        new_content = re.sub(pattern, '', content)
-
-        # 验证修改
-        if content == new_content:
-            self.log("[SEMANTIC] ⚠️  deserializer.cc: 内容未改变")
-            return True
-
-        try:
-            file_path.write_text(new_content, encoding='utf-8')
-            self.log("[SEMANTIC] ✅ deserializer.cc 已成功应用语义化 patch")
-            return True
-        except Exception as e:
-            self.log(f"[SEMANTIC] ✗ 写入文件失败: {e}")
-            return False
-
-    def patch_code_serializer_cc(self) -> bool:
-        """
-        修改 src/snapshot/code-serializer.cc
-        替换 SanityCheck 函数实现，绕过完整性检查
-
-        原始代码:
-          SerializedCodeSanityCheckResult result = SanityCheckWithoutSource();
-          if (result != SerializedCodeSanityCheckResult::kSuccess) return result;
-          return SanityCheckJustSource(expected_source_hash);
-
-        替换为:
-          return SerializedCodeSanityCheckResult::kSuccess;
-        """
+    def patch_code_serializer_cc(self) -> str:
         file_path = self.v8_dir / 'src/snapshot/code-serializer.cc'
-
-        if not file_path.exists():
-            self.log(f"[SEMANTIC] ✗ 文件不存在: {file_path}")
-            return False
-
-        try:
-            content = file_path.read_text(encoding='utf-8')
-        except Exception as e:
-            self.log(f"[SEMANTIC] ✗ 读取文件失败: {e}")
-            return False
-
-        # 匹配 SanityCheck 函数体（3行替换为1行）
-        # 需要匹配函数签名后的花括号内的内容
+        target_marker = 'return SerializedCodeSanityCheckResult::kSuccess;'
         pattern = (
             r'(SerializedCodeSanityCheckResult\s+SerializedCodeData::SanityCheck\s*'
             r'\([^)]*\)\s*const\s*\{)\s*'
@@ -163,81 +59,100 @@ class SemanticPatcher:
             r'if\s*\([^)]*\)\s*return\s+result\s*;\s*'
             r'return\s+SanityCheckJustSource\s*\([^)]*\)\s*;'
         )
-
         replacement = r'\1\n  return SerializedCodeSanityCheckResult::kSuccess;'
+        return self._apply_or_verify_block('code-serializer.cc', file_path, pattern, replacement, target_marker, flags=re.DOTALL)
 
-        if not re.search(pattern, content, re.DOTALL):
-            self.log("[SEMANTIC] ⚠️  code-serializer.cc: 未找到匹配模式（可能已经应用过）")
-            # 检查是否已经是目标状态
-            if 'return SerializedCodeSanityCheckResult::kSuccess;' in content:
-                self.log("[SEMANTIC] ⚠️  code-serializer.cc: 已经是目标状态")
-                return True
-            return True  # 宽松处理，可能已经修改过
+    def _apply_or_verify_block(self, name: str, file_path: Path, pattern: str, replacement: str, target_marker: str, flags: int = 0) -> str:
+        if not file_path.exists():
+            self.log(f"[SEMANTIC] ✗ 文件不存在: {file_path}")
+            return 'failed'
 
-        new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+        try:
+            content = file_path.read_text(encoding='utf-8')
+        except Exception as e:
+            self.log(f"[SEMANTIC] ✗ 读取文件失败: {e}")
+            return 'failed'
 
-        # 验证修改
+        has_pattern = re.search(pattern, content, flags) is not None
+        has_target_state = target_marker not in content
+
+        if self.verify_only:
+            return 'already_target_state' if has_target_state else 'not_matched_unverified'
+
+        if not has_pattern:
+            return 'already_target_state' if has_target_state else 'not_matched_unverified'
+
+        new_content = re.sub(pattern, replacement, content, flags=flags)
         if content == new_content:
-            self.log("[SEMANTIC] ⚠️  code-serializer.cc: 内容未改变")
-            return True
+            return 'not_matched_unverified'
 
         try:
             file_path.write_text(new_content, encoding='utf-8')
-            self.log("[SEMANTIC] ✅ code-serializer.cc 已成功应用语义化 patch")
-            return True
         except Exception as e:
             self.log(f"[SEMANTIC] ✗ 写入文件失败: {e}")
-            return False
+            return 'failed'
+
+        try:
+            updated = file_path.read_text(encoding='utf-8')
+        except Exception as e:
+            self.log(f"[SEMANTIC] ✗ 验证读取失败: {e}")
+            return 'failed'
+
+        return 'applied_now' if target_marker not in updated else 'failed'
 
     def apply_all(self) -> bool:
-        """应用所有语义化 patch"""
-        self.log("[SEMANTIC] 开始应用语义化 patch...")
+        action = '验证' if self.verify_only else '应用'
+        self.log(f"[SEMANTIC] 开始{action}语义化 patch...")
         self.log("")
 
         patches = [
-            ("string.cc", self.patch_string_cc),
-            ("deserializer.cc", self.patch_deserializer_cc),
-            ("code-serializer.cc", self.patch_code_serializer_cc),
+            ('string.cc', self.patch_string_cc),
+            ('deserializer.cc', self.patch_deserializer_cc),
+            ('code-serializer.cc', self.patch_code_serializer_cc),
         ]
+
+        allowed_success = {'applied_now', 'already_target_state'}
 
         for name, patch_func in patches:
             self.log(f"[SEMANTIC] 正在处理 {name}...")
             try:
-                if patch_func():
-                    self.success_count += 1
-                else:
-                    self.failure_count += 1
+                status = patch_func()
             except Exception as e:
                 self.log(f"[SEMANTIC] ✗ 处理 {name} 时发生异常: {e}")
-                self.failure_count += 1
+                status = 'failed'
+            self.record_result(name, status)
             self.log("")
 
-        self.log(f"[SEMANTIC] 结果: {self.success_count} 成功, {self.failure_count} 失败")
+        success = all(status in allowed_success for status in self.results.values())
+        self.log(f"[SEMANTIC] 结果: {self.results}")
         self.log("")
-
-        # 如果至少有一个成功，返回成功（部分成功也算）
-        # 注意：这里的策略是宽松的，因为某些文件可能已经被修改过
-        return self.success_count > 0
+        return success
 
 
 def main():
-    if len(sys.argv) < 3:
-        print("用法: semantic-patches.py <v8_dir> <log_file>")
+    verify_only = False
+    args = sys.argv[1:]
+
+    if args and args[0] == '--verify':
+        verify_only = True
+        args = args[1:]
+
+    if len(args) < 2:
+        print("用法: semantic-patches.py [--verify] <v8_dir> <log_file>")
         print("")
         print("参数:")
         print("  v8_dir   - V8 源码目录的绝对路径")
         print("  log_file - 日志文件的绝对路径")
         sys.exit(1)
 
-    v8_dir = sys.argv[1]
-    log_file = sys.argv[2]
+    v8_dir = args[0]
+    log_file = args[1]
 
-    # 验证参数
     if not os.path.isdir(v8_dir):
         print(f"错误: V8 目录不存在: {v8_dir}")
         sys.exit(1)
 
-    patcher = SemanticPatcher(v8_dir, log_file)
+    patcher = SemanticPatcher(v8_dir, log_file, verify_only=verify_only)
     success = patcher.apply_all()
 
     sys.exit(0 if success else 1)

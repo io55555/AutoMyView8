@@ -57,18 +57,29 @@ jobs:
           path: ~/depot_tools
           key: depot-tools-windows-${{ runner.os }}
 
-      - name: Cache V8 Source
-        uses: actions/cache@v4
-        with:
-          path: ~/v8
-          key: v8-source-${{ matrix.version.v8 }}-windows
-          restore-keys: |
-            v8-source-${{ matrix.version.v8 }}-
-
       - name: Build v8dasm
         shell: cmd
+        env:
+          V8_BUILD_ROOT: ${{ runner.temp }}\v8dasm-${{ matrix.version.v8 }}
         run: |
           call scripts\v8dasm-builders\build-windows.cmd ${{ matrix.version.v8 }} "${{ matrix.version.args }}"
+
+      - name: Verify artifact exists
+        if: success()
+        shell: bash
+        run: |
+          test -f "artifacts/v8dasm-${{ matrix.version.v8 }}.exe"
+
+      - name: Dump artifact directory on failure
+        if: failure()
+        shell: bash
+        run: |
+          if [ -d artifacts ]; then
+            ls -la artifacts
+            find artifacts -maxdepth 2 -type f | sort
+          else
+            echo "artifacts directory not found"
+          fi
 
       - name: Upload build logs
         if: always()
@@ -80,6 +91,7 @@ jobs:
           retention-days: 30
 
       - name: Upload artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: v8dasm-windows-x64-v${{ matrix.version.v8 }}

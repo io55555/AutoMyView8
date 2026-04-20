@@ -1,0 +1,130 @@
+﻿2026-04-19T19:46:45.7858562Z Current runner version: '2.333.1'
+2026-04-19T19:46:45.7884347Z ##[group]Runner Image Provisioner
+2026-04-19T19:46:45.7885150Z Hosted Compute Agent
+2026-04-19T19:46:45.7885804Z Version: 20260213.493
+2026-04-19T19:46:45.7886397Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+2026-04-19T19:46:45.7887135Z Build Date: 2026-02-13T00:28:41Z
+2026-04-19T19:46:45.7887868Z Worker ID: {7de9d6ae-0c2d-4610-95fd-9260f7bd4046}
+2026-04-19T19:46:45.7888533Z Azure Region: westcentralus
+2026-04-19T19:46:45.7889177Z ##[endgroup]
+2026-04-19T19:46:45.7890491Z ##[group]Operating System
+2026-04-19T19:46:45.7891105Z Ubuntu
+2026-04-19T19:46:45.7891729Z 24.04.4
+2026-04-19T19:46:45.7892253Z LTS
+2026-04-19T19:46:45.7892710Z ##[endgroup]
+2026-04-19T19:46:45.7893288Z ##[group]Runner Image
+2026-04-19T19:46:45.7893888Z Image: ubuntu-24.04
+2026-04-19T19:46:45.7894392Z Version: 20260413.86.1
+2026-04-19T19:46:45.7895561Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260413.86/images/ubuntu/Ubuntu2404-Readme.md
+2026-04-19T19:46:45.7897001Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260413.86
+2026-04-19T19:46:45.7897942Z ##[endgroup]
+2026-04-19T19:46:45.7899072Z ##[group]GITHUB_TOKEN Permissions
+2026-04-19T19:46:45.7901035Z Contents: read
+2026-04-19T19:46:45.7901859Z Metadata: read
+2026-04-19T19:46:45.7902532Z Packages: read
+2026-04-19T19:46:45.7903107Z ##[endgroup]
+2026-04-19T19:46:45.7905534Z Secret source: Actions
+2026-04-19T19:46:45.7906342Z Prepare workflow directory
+2026-04-19T19:46:45.9039740Z Prepare all required actions
+2026-04-19T19:46:45.9092977Z Getting action download info
+2026-04-19T19:46:46.2306114Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-04-19T19:46:46.4730468Z Complete job name: Prepare Build Matrix
+2026-04-19T19:46:46.6507978Z ##[group]Run actions/checkout@v4
+2026-04-19T19:46:46.6508754Z with:
+2026-04-19T19:46:46.6509142Z   repository: io55555/AutoMyView8
+2026-04-19T19:46:46.6509844Z   token: ***
+2026-04-19T19:46:46.6510240Z   ssh-strict: true
+2026-04-19T19:46:46.6510626Z   ssh-user: git
+2026-04-19T19:46:46.6511022Z   persist-credentials: true
+2026-04-19T19:46:46.6511637Z   clean: true
+2026-04-19T19:46:46.6512026Z   sparse-checkout-cone-mode: true
+2026-04-19T19:46:46.6512484Z   fetch-depth: 1
+2026-04-19T19:46:46.6512853Z   fetch-tags: false
+2026-04-19T19:46:46.6513234Z   show-progress: true
+2026-04-19T19:46:46.6513622Z   lfs: false
+2026-04-19T19:46:46.6513970Z   submodules: false
+2026-04-19T19:46:46.6514369Z   set-safe-directory: true
+2026-04-19T19:46:46.6515031Z ##[endgroup]
+2026-04-19T19:46:46.7603753Z Syncing repository: io55555/AutoMyView8
+2026-04-19T19:46:46.7606012Z ##[group]Getting Git version info
+2026-04-19T19:46:46.7607092Z Working directory is '/home/runner/work/AutoMyView8/AutoMyView8'
+2026-04-19T19:46:46.7608800Z [command]/usr/bin/git version
+2026-04-19T19:46:46.7625401Z git version 2.53.0
+2026-04-19T19:46:46.7650790Z ##[endgroup]
+2026-04-19T19:46:46.7665404Z Temporarily overriding HOME='/home/runner/work/_temp/6db60598-0f6e-466b-9407-4baaad371324' before making global git config changes
+2026-04-19T19:46:46.7667762Z Adding repository directory to the temporary git global config as a safe directory
+2026-04-19T19:46:46.7682814Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/AutoMyView8/AutoMyView8
+2026-04-19T19:46:46.7715748Z Deleting the contents of '/home/runner/work/AutoMyView8/AutoMyView8'
+2026-04-19T19:46:46.7718803Z ##[group]Initializing the repository
+2026-04-19T19:46:46.7723076Z [command]/usr/bin/git init /home/runner/work/AutoMyView8/AutoMyView8
+2026-04-19T19:46:46.7793428Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-04-19T19:46:46.7794916Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-04-19T19:46:46.7795890Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-04-19T19:46:46.7796565Z hint: call:
+2026-04-19T19:46:46.7796926Z hint:
+2026-04-19T19:46:46.7797827Z hint: 	git config --global init.defaultBranch <name>
+2026-04-19T19:46:46.7798393Z hint:
+2026-04-19T19:46:46.7798997Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-04-19T19:46:46.7800287Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-04-19T19:46:46.7800971Z hint:
+2026-04-19T19:46:46.7801338Z hint: 	git branch -m <name>
+2026-04-19T19:46:46.7801957Z hint:
+2026-04-19T19:46:46.7802527Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-04-19T19:46:46.7803494Z Initialized empty Git repository in /home/runner/work/AutoMyView8/AutoMyView8/.git/
+2026-04-19T19:46:46.7805594Z [command]/usr/bin/git remote add origin https://github.com/io55555/AutoMyView8
+2026-04-19T19:46:46.7836219Z ##[endgroup]
+2026-04-19T19:46:46.7836937Z ##[group]Disabling automatic garbage collection
+2026-04-19T19:46:46.7840216Z [command]/usr/bin/git config --local gc.auto 0
+2026-04-19T19:46:46.7868988Z ##[endgroup]
+2026-04-19T19:46:46.7869639Z ##[group]Setting up auth
+2026-04-19T19:46:46.7875576Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-04-19T19:46:46.7906415Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-04-19T19:46:46.8208001Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-04-19T19:46:46.8241299Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-04-19T19:46:46.8490295Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-04-19T19:46:46.8525346Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-04-19T19:46:46.8795485Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-04-19T19:46:46.8831602Z ##[endgroup]
+2026-04-19T19:46:46.8832668Z ##[group]Fetching the repository
+2026-04-19T19:46:46.8840822Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +51f816f595d6ba678aba4278c9efae429f28d3f2:refs/remotes/origin/main
+2026-04-19T19:46:47.2795068Z From https://github.com/io55555/AutoMyView8
+2026-04-19T19:46:47.2796352Z  * [new ref]         51f816f595d6ba678aba4278c9efae429f28d3f2 -> origin/main
+2026-04-19T19:46:47.2823709Z ##[endgroup]
+2026-04-19T19:46:47.2824755Z ##[group]Determining the checkout info
+2026-04-19T19:46:47.2826113Z ##[endgroup]
+2026-04-19T19:46:47.2831771Z [command]/usr/bin/git sparse-checkout disable
+2026-04-19T19:46:47.2868808Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-04-19T19:46:47.2895355Z ##[group]Checking out the ref
+2026-04-19T19:46:47.2898780Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-04-19T19:46:47.2960759Z Switched to a new branch 'main'
+2026-04-19T19:46:47.2963492Z branch 'main' set up to track 'origin/main'.
+2026-04-19T19:46:47.2969787Z ##[endgroup]
+2026-04-19T19:46:47.3003657Z [command]/usr/bin/git log -1 --format=%H
+2026-04-19T19:46:47.3026745Z 51f816f595d6ba678aba4278c9efae429f28d3f2
+2026-04-19T19:46:47.3589769Z ##[group]Run if [ -n "" ]; then
+2026-04-19T19:46:47.3590399Z [36;1mif [ -n "" ]; then[0m
+2026-04-19T19:46:47.3591251Z [36;1m  echo "matrix={\"version\":[{\"v8\":\"\",\"args\":\"v8_enable_pointer_compression=false\"}]}" >> $GITHUB_OUTPUT[0m
+2026-04-19T19:46:47.3592368Z [36;1melse[0m
+2026-04-19T19:46:47.3593159Z [36;1m  VERSIONS=$(jq -c '[.versions[] | {v8: .v8_version, node: .node_version, args: .build_args}]' configs/v8-versions.json)[0m
+2026-04-19T19:46:47.3594188Z [36;1m  echo "matrix={\"version\":$VERSIONS}" >> $GITHUB_OUTPUT[0m
+2026-04-19T19:46:47.3594772Z [36;1mfi[0m
+2026-04-19T19:46:47.3622195Z shell: /usr/bin/bash -e {0}
+2026-04-19T19:46:47.3622706Z ##[endgroup]
+2026-04-19T19:46:47.4982912Z Post job cleanup.
+2026-04-19T19:46:47.5924513Z [command]/usr/bin/git version
+2026-04-19T19:46:47.5959448Z git version 2.53.0
+2026-04-19T19:46:47.6001781Z Temporarily overriding HOME='/home/runner/work/_temp/a42d191b-06fc-4f71-b259-8623e736a830' before making global git config changes
+2026-04-19T19:46:47.6003979Z Adding repository directory to the temporary git global config as a safe directory
+2026-04-19T19:46:47.6008650Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/AutoMyView8/AutoMyView8
+2026-04-19T19:46:47.6050937Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-04-19T19:46:47.6083908Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-04-19T19:46:47.6318521Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-04-19T19:46:47.6342377Z http.https://github.com/.extraheader
+2026-04-19T19:46:47.6353746Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-04-19T19:46:47.6385765Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-04-19T19:46:47.6616256Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-04-19T19:46:47.6648541Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-04-19T19:46:47.6999367Z Evaluate and set job outputs
+2026-04-19T19:46:47.7076326Z Set output 'matrix'
+2026-04-19T19:46:47.7078143Z Cleaning up orphan processes
+2026-04-19T19:46:47.7401300Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
