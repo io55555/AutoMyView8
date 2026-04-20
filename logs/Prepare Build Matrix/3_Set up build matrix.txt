@@ -1,9 +1,0 @@
-﻿2026-04-19T19:46:47.3589732Z ##[group]Run if [ -n "" ]; then
-2026-04-19T19:46:47.3590392Z [36;1mif [ -n "" ]; then[0m
-2026-04-19T19:46:47.3591244Z [36;1m  echo "matrix={\"version\":[{\"v8\":\"\",\"args\":\"v8_enable_pointer_compression=false\"}]}" >> $GITHUB_OUTPUT[0m
-2026-04-19T19:46:47.3592355Z [36;1melse[0m
-2026-04-19T19:46:47.3593152Z [36;1m  VERSIONS=$(jq -c '[.versions[] | {v8: .v8_version, node: .node_version, args: .build_args}]' configs/v8-versions.json)[0m
-2026-04-19T19:46:47.3594183Z [36;1m  echo "matrix={\"version\":$VERSIONS}" >> $GITHUB_OUTPUT[0m
-2026-04-19T19:46:47.3594768Z [36;1mfi[0m
-2026-04-19T19:46:47.3622167Z shell: /usr/bin/bash -e {0}
-2026-04-19T19:46:47.3622702Z ##[endgroup]

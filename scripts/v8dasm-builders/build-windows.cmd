@@ -69,6 +69,14 @@ call :log_line "GN log: %GN_LOG%"
 call :log_line "Ninja log: %NINJA_LOG%"
 call :log_line "Clang log: %CLANG_LOG%"
 
+set DEPOT_TOOLS_WIN_TOOLCHAIN=0
+if not exist "%USERPROFILE%\depot_tools" (
+    call :fail "INIT" "depot_tools not found at %USERPROFILE%\depot_tools"
+)
+set PATH=%USERPROFILE%\depot_tools;%PATH%
+call :log_line "DEPOT_TOOLS_WIN_TOOLCHAIN=%DEPOT_TOOLS_WIN_TOOLCHAIN%"
+call :log_line "Prepended depot_tools to PATH: %USERPROFILE%\depot_tools"
+
 call :require_tool git
 call :require_tool python
 call :require_tool clang++
@@ -87,15 +95,6 @@ call :append_command_output "%BUILD_LOG%" "where gclient"
 call :append_command_output "%BUILD_LOG%" "where fetch"
 call :append_command_output "%BUILD_LOG%" "where gn"
 call :append_command_output "%BUILD_LOG%" "where ninja"
-
-set DEPOT_TOOLS_WIN_TOOLCHAIN=0
-set PATH=%USERPROFILE%\depot_tools;%PATH%
-call :log_line "DEPOT_TOOLS_WIN_TOOLCHAIN=%DEPOT_TOOLS_WIN_TOOLCHAIN%"
-call :log_line "PATH head=%USERPROFILE%\depot_tools"
-
-if not exist "%USERPROFILE%\depot_tools" (
-    call :fail "INIT" "depot_tools not found at %USERPROFILE%\depot_tools"
-)
 
 if not exist "%V8_PARENT_DIR%" mkdir "%V8_PARENT_DIR%"
 if errorlevel 1 call :fail "INIT" "Failed to create build root %V8_PARENT_DIR%"

@@ -1,8 +1,0 @@
-2026-04-19T19:46:43.3330000Z Evaluating prepare.if
-2026-04-19T19:46:43.3330000Z Evaluating: success()
-2026-04-19T19:46:43.3330000Z Result: true
-2026-04-19T19:46:43.3370000Z Requested labels: ubuntu-latest
-2026-04-19T19:46:43.3370000Z Job defined at: io55555/AutoMyView8/.github/workflows/build-v8dasm.yml@refs/heads/main
-2026-04-19T19:46:43.3370000Z Waiting for a runner to pick up this job...
-2026-04-19T19:46:43.6770000Z Job is waiting for a hosted runner to come online.
-2026-04-19T19:46:43.6770000Z Job is about to start running on the hosted runner: GitHub Actions 1000012046
