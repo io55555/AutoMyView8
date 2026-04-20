@@ -227,21 +227,28 @@ class SemanticPatcher:
         updated_body = body
         changed = False
 
-        asm_block = (
-            "\n  // Print array literal members instead of only \"<AsmWasmData>\"\n"
-            "  if (map(cage_base).instance_type() == ASM_WASM_DATA_TYPE) {\n"
-            "    os << \"<ArrayBoilerplateDescription> \";\n"
-            "    ArrayBoilerplateDescription::cast(*this)\n"
-            "        .constant_elements()\n"
-            "        .HeapObjectShortPrint(os);\n"
-            "    return;\n"
-            "  }\n\n"
-        )
         if "ASM_WASM_DATA_TYPE" not in updated_body:
-            switch_pattern = r'(\n)(\s*)switch \(map\(cage_base\)\.instance_type\(\)\) \{'
+            switch_pattern = r'(\n)(?P<indent>\s*)switch \((?P<map_expr>map\(\)|map\(cage_base\))\.instance_type\(\)\) \{'
+            switch_match = re.search(switch_pattern, updated_body)
+            if switch_match is None:
+                return "not_matched_unverified"
+
+            indent = switch_match.group("indent")
+            map_expr = switch_match.group("map_expr")
+            asm_block = (
+                "\n"
+                f'{indent}// Print array literal members instead of only "<AsmWasmData>"\n'
+                f"{indent}if ({map_expr}.instance_type() == ASM_WASM_DATA_TYPE) {{\n"
+                f'{indent}  os << "<ArrayBoilerplateDescription> ";\n'
+                f"{indent}  ArrayBoilerplateDescription::cast(*this)\n"
+                f"{indent}      .constant_elements()\n"
+                f"{indent}      .HeapObjectShortPrint(os);\n"
+                f"{indent}  return;\n"
+                f"{indent}}}\n\n"
+            )
             next_body = re.sub(
                 switch_pattern,
-                r'\1' + asm_block + r'\2switch (map(cage_base).instance_type()) {',
+                r'\1' + asm_block + indent + f'switch ({map_expr}.instance_type()) {{',
                 updated_body,
                 count=1,
             )
