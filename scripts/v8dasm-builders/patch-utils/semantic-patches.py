@@ -257,62 +257,59 @@ class SemanticPatcher:
             updated_body = next_body
             changed = True
 
-        replacements = [
+        case_injections = [
             (
-                r'(?P<indent>\s*)os << "<FixedArray\[" << FixedArray::cast\(\*this\)\.length\(\) << "\]>";\n',
-                r'\g<indent>os << "<FixedArray[" << FixedArray::cast(*this).length() << "]>";\n'
+                "FIXED_ARRAY_TYPE",
+                r'(?P<indent>\s*)case FIXED_ARRAY_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
+                r'\g<indent>case FIXED_ARRAY_TYPE:\n'
+                r'\g<body>'
                 r'\g<indent>os << "\\nStart FixedArray\\n";\n'
                 r'\g<indent>FixedArray::cast(*this).FixedArrayPrint(os);\n'
-                r'\g<indent>os << "\\nEnd FixedArray\\n";\n',
+                r'\g<indent>os << "\\nEnd FixedArray\\n";\n'
+                r'\g<indent>break;\n',
                 "Start FixedArray",
             ),
             (
-                r'(?P<indent>\s*)os << "<ObjectBoilerplateDescription\[" << .*? << "\]>";\n',
-                r'\g<indent>os << "<ObjectBoilerplateDescription[" << FixedArray::cast(*this).length()\n'
-                r'\g<indent>   << "]>";\n'
+                "OBJECT_BOILERPLATE_DESCRIPTION_TYPE",
+                r'(?P<indent>\s*)case OBJECT_BOILERPLATE_DESCRIPTION_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
+                r'\g<indent>case OBJECT_BOILERPLATE_DESCRIPTION_TYPE:\n'
+                r'\g<body>'
                 r'\g<indent>os << "\\nStart ObjectBoilerplateDescription\\n";\n'
                 r'\g<indent>ObjectBoilerplateDescription::cast(*this)\n'
                 r'\g<indent>    .ObjectBoilerplateDescriptionPrint(os);\n'
-                r'\g<indent>os << "\\nEnd ObjectBoilerplateDescription\\n";\n',
+                r'\g<indent>os << "\\nEnd ObjectBoilerplateDescription\\n";\n'
+                r'\g<indent>break;\n',
                 "Start ObjectBoilerplateDescription",
             ),
             (
-                r'(?P<indent>\s*)os << "<FixedDoubleArray\[" << FixedDoubleArray::cast\(\*this\)\.length\(\)\n\s*<< "\]>";\n',
-                r'\g<indent>os << "<FixedDoubleArray[" << FixedDoubleArray::cast(*this).length()\n'
-                r'\g<indent>   << "]>";\n'
+                "FIXED_DOUBLE_ARRAY_TYPE",
+                r'(?P<indent>\s*)case FIXED_DOUBLE_ARRAY_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
+                r'\g<indent>case FIXED_DOUBLE_ARRAY_TYPE:\n'
+                r'\g<body>'
                 r'\g<indent>os << "\\nStart FixedDoubleArray\\n";\n'
                 r'\g<indent>FixedDoubleArray::cast(*this).FixedDoubleArrayPrint(os);\n'
-                r'\g<indent>os << "\\nEnd FixedDoubleArray\\n";\n',
+                r'\g<indent>os << "\\nEnd FixedDoubleArray\\n";\n'
+                r'\g<indent>break;\n',
                 "Start FixedDoubleArray",
+            ),
+            (
+                "SHARED_FUNCTION_INFO_TYPE",
+                r'(?P<indent>\s*)case SHARED_FUNCTION_INFO_TYPE:\s*\{\n(?P<body>.*?)(?P=indent)\}\n(?P=indent)break;\n',
+                r'\g<indent>case SHARED_FUNCTION_INFO_TYPE: {\n'
+                r'\g<body>'
+                r'\g<indent>  os << "\\nStart SharedFunctionInfo\\n";\n'
+                r'\g<indent>  shared.SharedFunctionInfoPrint(os);\n'
+                r'\g<indent>  os << "\\nEnd SharedFunctionInfo\\n";\n'
+                r'\g<indent>  break;\n'
+                r'\g<indent>}\n',
+                "Start SharedFunctionInfo",
             ),
         ]
 
-        for pattern, replacement, marker in replacements:
+        for _, pattern, replacement, marker in case_injections:
             if marker in updated_body:
                 continue
             next_body = re.sub(pattern, replacement, updated_body, count=1, flags=re.DOTALL)
-            if next_body == updated_body:
-                return "not_matched_unverified"
-            updated_body = next_body
-            changed = True
-
-        if "Start SharedFunctionInfo" not in updated_body:
-            shared_pattern = (
-                r'(?P<indent>\s*)\} else \{\n'
-                r'(?P=indent)  os << "<SharedFunctionInfo>";\n'
-                r'(?P=indent)\}\n'
-                r'(?P=indent)break;\n'
-            )
-            shared_replacement = (
-                r'\g<indent>} else {\n'
-                r'\g<indent>  os << "<SharedFunctionInfo>";\n'
-                r'\g<indent>}\n'
-                r'\g<indent>os << "\\nStart SharedFunctionInfo\\n";\n'
-                r'\g<indent>shared.SharedFunctionInfoPrint(os);\n'
-                r'\g<indent>os << "\\nEnd SharedFunctionInfo\\n";\n'
-                r'\g<indent>break;\n'
-            )
-            next_body = re.sub(shared_pattern, shared_replacement, updated_body, count=1)
             if next_body == updated_body:
                 return "not_matched_unverified"
             updated_body = next_body
