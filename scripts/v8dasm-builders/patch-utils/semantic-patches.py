@@ -213,6 +213,16 @@ class SemanticPatcher:
         body_start, body_end = body_range
         body = content[body_start:body_end]
 
+        def log_objects_cc_context(reason: str, text: str):
+            switch_index = text.find("switch (")
+            excerpt_start = max(0, switch_index - 200) if switch_index != -1 else 0
+            excerpt_end = min(len(text), switch_index + 2200) if switch_index != -1 else min(len(text), 2200)
+            excerpt = text[excerpt_start:excerpt_end]
+            excerpt = excerpt.replace("\r\n", "\n")
+            self.log(f"[SEMANTIC][objects.cc] reason={reason}")
+            for line in excerpt.split("\n"):
+                self.log(f"[SEMANTIC][objects.cc] {line}")
+
         required_markers = [
             "ASM_WASM_DATA_TYPE",
             "Start FixedArray",
@@ -231,6 +241,7 @@ class SemanticPatcher:
             switch_pattern = r'(\n)(?P<indent>\s*)switch \((?P<map_expr>map\(\)|map\(cage_base\))\.instance_type\(\)\) \{'
             switch_match = re.search(switch_pattern, updated_body)
             if switch_match is None:
+                log_objects_cc_context("switch_pattern_not_found", updated_body)
                 return "not_matched_unverified"
 
             indent = switch_match.group("indent")
@@ -253,6 +264,7 @@ class SemanticPatcher:
                 count=1,
             )
             if next_body == updated_body:
+                log_objects_cc_context("switch_injection_failed", updated_body)
                 return "not_matched_unverified"
             updated_body = next_body
             changed = True
@@ -306,11 +318,12 @@ class SemanticPatcher:
             ),
         ]
 
-        for _, pattern, replacement, marker in case_injections:
+        for case_name, pattern, replacement, marker in case_injections:
             if marker in updated_body:
                 continue
             next_body = re.sub(pattern, replacement, updated_body, count=1, flags=re.DOTALL)
             if next_body == updated_body:
+                log_objects_cc_context(f"case_injection_failed:{case_name}", updated_body)
                 return "not_matched_unverified"
             updated_body = next_body
             changed = True
