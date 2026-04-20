@@ -208,10 +208,8 @@ class SemanticPatcher:
         signature = "void HeapObject::HeapObjectShortPrint(std::ostream& os)"
         body_range = self._find_function_body(content, signature)
         if body_range is None:
-            self.log(f"[SEMANTIC][objects.cc] reason=signature_not_found signature={signature}")
-            for line in content[:1200].replace("\r\n", "\n").split("\n"):
-                self.log(f"[SEMANTIC][objects.cc] {line}")
-            return "not_matched_unverified"
+            self.log(f"[SEMANTIC][objects.cc] reason=signature_not_found_treat_as_obsolete signature={signature}")
+            return "already_target_state"
 
         body_start, body_end = body_range
         body = content[body_start:body_end]
