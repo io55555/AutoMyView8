@@ -6,7 +6,9 @@
       "Bash(git -C \"/f/node-v24.11.0-win-x64/AutoView8\" status --short)",
       "Bash(git -C \"/f/node-v24.11.0-win-x64/AutoView8\" rev-parse --show-toplevel)",
       "Bash(python *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "WebFetch(domain:chromium.googlesource.com)",
+      "WebSearch"
     ]
   }
 }

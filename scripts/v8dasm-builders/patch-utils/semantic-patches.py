@@ -235,83 +235,80 @@ class SemanticPatcher:
             "        .constant_elements()\n"
             "        .HeapObjectShortPrint(os);\n"
             "    return;\n"
-            "  }\n"
+            "  }\n\n"
         )
         if "ASM_WASM_DATA_TYPE" not in updated_body:
-            anchor = "    return;\n  }\n  switch (map(cage_base).instance_type()) {"
-            replacement = f"    return;\n  }}{asm_block}\n  switch (map(cage_base).instance_type()) {{"
-            if anchor in updated_body:
-                updated_body = updated_body.replace(anchor, replacement, 1)
-                changed = True
-            else:
+            switch_pattern = r'(\n)(\s*)switch \(map\(cage_base\)\.instance_type\(\)\) \{'
+            next_body = re.sub(
+                switch_pattern,
+                r'\1' + asm_block + r'\2switch (map(cage_base).instance_type()) {',
+                updated_body,
+                count=1,
+            )
+            if next_body == updated_body:
                 return "not_matched_unverified"
+            updated_body = next_body
+            changed = True
 
         replacements = [
             (
-                '      os << "<FixedArray[" << FixedArray::cast(*this).length() << "]>";\n',
-                '      os << "<FixedArray[" << FixedArray::cast(*this).length() << "]>";\n'
-                '      os << "\\nStart FixedArray\\n";\n'
-                '      FixedArray::cast(*this).FixedArrayPrint(os);\n'
-                '      os << "\\nEnd FixedArray\\n";\n',
+                r'(?P<indent>\s*)os << "<FixedArray\[" << FixedArray::cast\(\*this\)\.length\(\) << "\]>";\n',
+                r'\g<indent>os << "<FixedArray[" << FixedArray::cast(*this).length() << "]>";\n'
+                r'\g<indent>os << "\\nStart FixedArray\\n";\n'
+                r'\g<indent>FixedArray::cast(*this).FixedArrayPrint(os);\n'
+                r'\g<indent>os << "\\nEnd FixedArray\\n";\n',
                 "Start FixedArray",
             ),
             (
-                '      os << "<ObjectBoilerplateDescription[" << FixedArray::cast(*this).length()\n'
-                '         << "]>";\n',
-                '      os << "<ObjectBoilerplateDescription[" << FixedArray::cast(*this).length()\n'
-                '         << "]>";\n'
-                '      os << "\\nStart ObjectBoilerplateDescription\\n";\n'
-                '      ObjectBoilerplateDescription::cast(*this)\n'
-                '          .ObjectBoilerplateDescriptionPrint(os);\n'
-                '      os << "\\nEnd ObjectBoilerplateDescription\\n";\n',
+                r'(?P<indent>\s*)os << "<ObjectBoilerplateDescription\[" << .*? << "\]>";\n',
+                r'\g<indent>os << "<ObjectBoilerplateDescription[" << FixedArray::cast(*this).length()\n'
+                r'\g<indent>   << "]>";\n'
+                r'\g<indent>os << "\\nStart ObjectBoilerplateDescription\\n";\n'
+                r'\g<indent>ObjectBoilerplateDescription::cast(*this)\n'
+                r'\g<indent>    .ObjectBoilerplateDescriptionPrint(os);\n'
+                r'\g<indent>os << "\\nEnd ObjectBoilerplateDescription\\n";\n',
                 "Start ObjectBoilerplateDescription",
             ),
             (
-                '      os << "<FixedDoubleArray[" << FixedDoubleArray::cast(*this).length()\n'
-                '         << "]>";\n',
-                '      os << "<FixedDoubleArray[" << FixedDoubleArray::cast(*this).length()\n'
-                '         << "]>";\n'
-                '      os << "\\nStart FixedDoubleArray\\n";\n'
-                '      FixedDoubleArray::cast(*this).FixedDoubleArrayPrint(os);\n'
-                '      os << "\\nEnd FixedDoubleArray\\n";\n',
+                r'(?P<indent>\s*)os << "<FixedDoubleArray\[" << FixedDoubleArray::cast\(\*this\)\.length\(\)\n\s*<< "\]>";\n',
+                r'\g<indent>os << "<FixedDoubleArray[" << FixedDoubleArray::cast(*this).length()\n'
+                r'\g<indent>   << "]>";\n'
+                r'\g<indent>os << "\\nStart FixedDoubleArray\\n";\n'
+                r'\g<indent>FixedDoubleArray::cast(*this).FixedDoubleArrayPrint(os);\n'
+                r'\g<indent>os << "\\nEnd FixedDoubleArray\\n";\n',
                 "Start FixedDoubleArray",
-            ),
-            (
-                '      break;\n',
-                '      os << "\\nStart SharedFunctionInfo\\n";\n'
-                '      shared.SharedFunctionInfoPrint(os);\n'
-                '      os << "\\nEnd SharedFunctionInfo\\n";\n'
-                '      break;\n',
-                "Start SharedFunctionInfo",
             ),
         ]
 
-        for old, new, marker in replacements:
+        for pattern, replacement, marker in replacements:
             if marker in updated_body:
                 continue
-            if old not in updated_body:
+            next_body = re.sub(pattern, replacement, updated_body, count=1, flags=re.DOTALL)
+            if next_body == updated_body:
                 return "not_matched_unverified"
-            if marker == "Start SharedFunctionInfo":
-                shared_anchor = (
-                    '      } else {\n'
-                    '        os << "<SharedFunctionInfo>";\n'
-                    '      }\n'
-                    '      break;\n'
-                )
-                shared_replacement = (
-                    '      } else {\n'
-                    '        os << "<SharedFunctionInfo>";\n'
-                    '      }\n'
-                    '      os << "\\nStart SharedFunctionInfo\\n";\n'
-                    '      shared.SharedFunctionInfoPrint(os);\n'
-                    '      os << "\\nEnd SharedFunctionInfo\\n";\n'
-                    '      break;\n'
-                )
-                if shared_anchor not in updated_body:
-                    return "not_matched_unverified"
-                updated_body = updated_body.replace(shared_anchor, shared_replacement, 1)
-            else:
-                updated_body = updated_body.replace(old, new, 1)
+            updated_body = next_body
+            changed = True
+
+        if "Start SharedFunctionInfo" not in updated_body:
+            shared_pattern = (
+                r'(?P<indent>\s*)\} else \{\n'
+                r'(?P=indent)  os << "<SharedFunctionInfo>";\n'
+                r'(?P=indent)\}\n'
+                r'(?P=indent)break;\n'
+            )
+            shared_replacement = (
+                r'\g<indent>} else {\n'
+                r'\g<indent>  os << "<SharedFunctionInfo>";\n'
+                r'\g<indent>}\n'
+                r'\g<indent>os << "\\nStart SharedFunctionInfo\\n";\n'
+                r'\g<indent>shared.SharedFunctionInfoPrint(os);\n'
+                r'\g<indent>os << "\\nEnd SharedFunctionInfo\\n";\n'
+                r'\g<indent>break;\n'
+            )
+            next_body = re.sub(shared_pattern, shared_replacement, updated_body, count=1)
+            if next_body == updated_body:
+                return "not_matched_unverified"
+            updated_body = next_body
             changed = True
 
         new_content = content[:body_start] + updated_body + content[body_end:]
