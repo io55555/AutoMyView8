@@ -323,8 +323,9 @@ if exist "%~2" (
 exit /b 0
 
 :append_command_output
->> "%~1" echo =====[ CMD:%~2 ]=====
-cmd /d /c %~2 >> "%~1" 2>&1
+set COMMAND_TEXT=%~2
+>> "%~1" echo =====[ CMD:!COMMAND_TEXT! ]=====
+cmd /d /c !COMMAND_TEXT! >> "%~1" 2>&1
 >> "%~1" echo.
 exit /b 0
 
