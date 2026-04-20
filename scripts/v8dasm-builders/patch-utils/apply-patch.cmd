@@ -11,7 +11,6 @@ REM   abort_on_failure  - 失败时是否中止 (true/false, 默认: true)
 
 setlocal enabledelayedexpansion
 
-REM 参数解析
 set PATCH_FILE=%~1
 set V8_DIR=%~2
 set LOG_FILE=%~3
@@ -19,7 +18,6 @@ set ABORT_ON_FAILURE=%~4
 set PATCH_STATUS=failed
 if "%ABORT_ON_FAILURE%"=="" set ABORT_ON_FAILURE=true
 
-REM 参数验证
 if "%PATCH_FILE%"=="" (
     echo 错误: 缺少必需参数
     echo 用法: %~nx0 ^<patch_file^> ^<v8_dir^> ^<log_file^> [abort_on_failure]
@@ -48,11 +46,9 @@ if not exist "%V8_DIR%" (
     exit /b 1
 )
 
-REM 确保日志目录存在
 for %%F in ("%LOG_FILE%") do set LOG_DIR=%%~dpF
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
 
-REM 初始化日志文件
 echo =====[ V8 Patch Application - Multi-level Fallback ]===== > "%LOG_FILE%"
 echo Patch 文件: %PATCH_FILE% >> "%LOG_FILE%"
 echo V8 目录: %V8_DIR% >> "%LOG_FILE%"
@@ -70,16 +66,13 @@ echo 时间戳: %date% %time%
 echo.
 
 call :log_status
-
-REM 第0级：强制重置到干净状态
 call :do_reset
 
-REM 检查 patch 是否已经应用（反向检查）
 echo [检查] 检测 patch 是否已经应用...
 echo [检查] 检测 patch 是否已经应用... >> "%LOG_FILE%"
 cd /d "%V8_DIR%"
 
-git apply --check --reverse "%PATCH_FILE%" >nul 2>&1
+git.exe apply --check --reverse "%PATCH_FILE%" >nul 2>&1
 if not errorlevel 1 (
     set PATCH_STATUS=already_applied
     echo [检查] Patch 已经应用过，跳过
@@ -93,16 +86,15 @@ echo [检查] Patch 尚未应用，继续尝试应用 >> "%LOG_FILE%"
 echo.
 echo. >> "%LOG_FILE%"
 
-REM 第1级：git apply
 echo [第1级] 尝试使用 git apply...
 echo [第1级] 尝试使用 git apply... >> "%LOG_FILE%"
 cd /d "%V8_DIR%"
 
-git apply --check "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
+git.exe apply --check "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
     echo [LEVEL 1] Patch 检查通过，正在应用...
     echo [LEVEL 1] Patch 检查通过，正在应用... >> "%LOG_FILE%"
-    git apply --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
+    git.exe apply --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
     if not errorlevel 1 (
         set PATCH_STATUS=applied_git
         call :verify_patch_state
@@ -119,17 +111,15 @@ echo [LEVEL 1] git apply 失败 >> "%LOG_FILE%"
 echo.
 echo. >> "%LOG_FILE%"
 
-REM 重置后再试第2级
 call :do_reset
 
-REM 第2级：git apply 三向合并
 echo [第2级] 尝试使用 git apply 三向合并...
 echo [第2级] 尝试使用 git apply 三向合并... >> "%LOG_FILE%"
 cd /d "%V8_DIR%"
 
-git apply -3 --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
+git.exe apply -3 --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
-    git diff --check 2>&1 | findstr /C:"conflict" >nul
+    git.exe diff --check 2>&1 | findstr /C:"conflict" >nul
     if errorlevel 1 (
         set PATCH_STATUS=applied_3way
         call :verify_patch_state
@@ -149,15 +139,13 @@ echo [LEVEL 2] git apply -3 失败 >> "%LOG_FILE%"
 echo.
 echo. >> "%LOG_FILE%"
 
-REM 重置后再试第3级
 call :do_reset
 
-REM 第3级：git apply --ignore-whitespace
 echo [第3级] 尝试使用 git apply --ignore-whitespace...
 echo [第3级] 尝试使用 git apply --ignore-whitespace... >> "%LOG_FILE%"
 cd /d "%V8_DIR%"
 
-git apply --ignore-whitespace --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
+git.exe apply --ignore-whitespace --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
     set PATCH_STATUS=applied_ignore_whitespace
     call :verify_patch_state
@@ -173,10 +161,8 @@ echo [LEVEL 3] git apply --ignore-whitespace 失败 >> "%LOG_FILE%"
 echo.
 echo. >> "%LOG_FILE%"
 
-REM 重置后再试第4级
 call :do_reset
 
-REM 第4级：语义化替换（Python 脚本）
 echo [第4级] 尝试使用语义化替换...
 echo [第4级] 尝试使用语义化替换... >> "%LOG_FILE%"
 
@@ -256,14 +242,14 @@ pushd "%V8_DIR%" >nul 2>&1 || (
     exit /b 0
 )
 
-git rev-parse --is-inside-work-tree >nul 2>&1 || (
+git.exe rev-parse --is-inside-work-tree >nul 2>&1 || (
     echo [RESET] 非 git 仓库，跳过重置
     echo [RESET] 非 git 仓库，跳过重置 >> "%LOG_FILE%"
     popd
     exit /b 0
 )
 
-git reset --hard HEAD >> "%LOG_FILE%" 2>&1
+git.exe reset --hard HEAD >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (
     echo [RESET] git reset 失败，继续后续 patch 尝试
     echo [RESET] git reset 失败，继续后续 patch 尝试 >> "%LOG_FILE%"
@@ -271,7 +257,7 @@ if errorlevel 1 (
     exit /b 0
 )
 
-git clean -fd >> "%LOG_FILE%" 2>&1
+git.exe clean -fd >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (
     echo [RESET] git clean 失败，继续后续 patch 尝试
     echo [RESET] git clean 失败，继续后续 patch 尝试 >> "%LOG_FILE%"
@@ -285,7 +271,7 @@ popd
 exit /b 0
 
 :verify_patch_state
-git apply --check --reverse "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
+git.exe apply --check --reverse "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
     echo [VERIFY] git apply --check --reverse 成功
     echo [VERIFY] git apply --check --reverse 成功 >> "%LOG_FILE%"

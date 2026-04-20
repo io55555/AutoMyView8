@@ -86,7 +86,7 @@ call :require_tool gn
 call :require_tool ninja
 
 call :append_command_output "%BUILD_LOG%" "where git"
-call :append_command_output "%BUILD_LOG%" "git --version"
+call :append_command_output "%BUILD_LOG%" "git.exe --version"
 call :append_command_output "%BUILD_LOG%" "where python"
 call :append_command_output "%BUILD_LOG%" "python --version"
 call :append_command_output "%BUILD_LOG%" "where clang++"
@@ -159,33 +159,33 @@ if not exist "%V8_DIR%\.git" call :fail "PREPARE_CHECKOUT" "%V8_DIR% is not a gi
 
 call :stage "CHECKOUT"
 pushd "%V8_DIR%" >nul 2>&1 || call :fail "CHECKOUT" "Failed to enter %V8_DIR%"
-call :append_command_output "%STATE_LOG%" "git status --short"
-git reset --hard HEAD >> "%CHECKOUT_LOG%" 2>&1
+call :append_command_output "%STATE_LOG%" "git.exe status --short"
+git.exe reset --hard HEAD >> "%CHECKOUT_LOG%" 2>&1
 if errorlevel 1 (
     popd
-    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git reset --hard HEAD failed"
+    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git.exe reset --hard HEAD failed"
 )
-git clean -ffd >> "%CHECKOUT_LOG%" 2>&1
+git.exe clean -ffd >> "%CHECKOUT_LOG%" 2>&1
 if errorlevel 1 (
     popd
-    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git clean -ffd failed"
+    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git.exe clean -ffd failed"
 )
-git fetch --all --tags >> "%CHECKOUT_LOG%" 2>&1
+git.exe fetch --all --tags >> "%CHECKOUT_LOG%" 2>&1
 if errorlevel 1 (
     popd
-    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git fetch --all --tags failed"
+    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git.exe fetch --all --tags failed"
 )
-git checkout %V8_VERSION% >> "%CHECKOUT_LOG%" 2>&1
+git.exe checkout %V8_VERSION% >> "%CHECKOUT_LOG%" 2>&1
 if errorlevel 1 (
-    git tag --list "%V8_VERSION%" >> "%CHECKOUT_LOG%" 2>&1
-    git status --short >> "%CHECKOUT_LOG%" 2>&1
+    git.exe tag --list "%V8_VERSION%" >> "%CHECKOUT_LOG%" 2>&1
+    git.exe status --short >> "%CHECKOUT_LOG%" 2>&1
     popd
-    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git checkout %V8_VERSION% failed"
+    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git.exe checkout %V8_VERSION% failed"
 )
-git rev-parse HEAD >> "%CHECKOUT_LOG%" 2>&1
+git.exe rev-parse HEAD >> "%CHECKOUT_LOG%" 2>&1
 if errorlevel 1 (
     popd
-    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git rev-parse HEAD failed after checkout"
+    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git.exe rev-parse HEAD failed after checkout"
 )
 popd >nul
 
@@ -200,7 +200,7 @@ if not exist "%V8_DIR%\include" (
     popd
     call :fail_with_log "SYNC" "%SYNC_LOG%" "V8 include directory missing after sync"
 )
-call :append_command_output "%STATE_LOG%" "git status --short"
+call :append_command_output "%STATE_LOG%" "git.exe status --short"
 popd >nul
 
 if not exist "%PATCH_FILE%" call :fail "PATCH" "Patch file not found: %PATCH_FILE%"
