@@ -174,8 +174,15 @@ class SemanticPatcher:
                 '  os << std::flush;\n'
             )
             newline_pattern = r'(\s*os << "\\n";\n)(\s*)$'
-            if re.search(newline_pattern, updated_body):
-                updated_body = re.sub(newline_pattern, r'\1' + bytecode_block + r'\2', updated_body, count=1)
+            match = re.search(newline_pattern, updated_body)
+            if match:
+                updated_body = (
+                    updated_body[: match.start()]
+                    + match.group(1)
+                    + bytecode_block
+                    + match.group(2)
+                    + updated_body[match.end() :]
+                )
                 changed = True
             else:
                 return "not_matched_unverified"
