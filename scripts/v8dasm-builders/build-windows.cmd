@@ -143,7 +143,8 @@ if not exist "%V8_PARENT_DIR%\.gclient" (
 
 findstr /c:"target_os = ['win']" "%V8_PARENT_DIR%\.gclient" >nul 2>&1
 if errorlevel 1 (
-    cmd /d /c "echo target_os = ['win']>> \"%V8_PARENT_DIR%\.gclient\""
+    >> "%V8_PARENT_DIR%\.gclient" echo target_os = ['win']
+    findstr /c:"target_os = ['win']" "%V8_PARENT_DIR%\.gclient" >nul 2>&1
     if errorlevel 1 (
         popd
         call :fail "PREPARE_CHECKOUT" "Failed to append target_os to .gclient"
