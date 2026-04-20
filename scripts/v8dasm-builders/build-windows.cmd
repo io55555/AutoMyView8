@@ -51,6 +51,8 @@ set PATCH_HELPER=%WORKSPACE_DIR%\scripts\v8dasm-builders\patch-utils\apply-patch
 set PATCH_FILE=%WORKSPACE_DIR%\Disassembler\v8.patch
 set DASM_SOURCE=%WORKSPACE_DIR%\Disassembler\v8dasm.cpp
 
+for %%I in ("%WORKSPACE_DIR%\artifacts") do set ARTIFACTS_DIR=%%~fI
+
 del /q "%BUILD_LOG%" "%FETCH_LOG%" "%SYNC_LOG%" "%GN_LOG%" "%NINJA_LOG%" "%CLANG_LOG%" "%PATCH_LOG%" "%CHECKOUT_LOG%" "%STATE_LOG%" 2>nul
 
 call :log_header
@@ -108,7 +110,7 @@ if exist "%V8_PARENT_DIR%\.gclient" (
 
 if exist "%V8_DIR%" (
     call :log_line "Existing V8 checkout detected"
-    call :append_command_output "%STATE_LOG%" "cmd /d /c dir /a \"%V8_PARENT_DIR%\""
+    call :append_command_output "%STATE_LOG%" "dir /a \"%V8_PARENT_DIR%\""
     if not exist "%V8_DIR%\.git" (
         call :log_line "Existing V8 dir is missing .git; deleting isolated build root"
         rmdir /s /q "%V8_PARENT_DIR%"
@@ -207,10 +209,18 @@ if not exist "%PATCH_FILE%" call :fail "PATCH" "Patch file not found: %PATCH_FIL
 if not exist "%PATCH_HELPER%" call :fail "PATCH" "Patch helper not found: %PATCH_HELPER%"
 
 call :stage "PATCH"
+call :log_line "Patch helper: %PATCH_HELPER%"
+call :log_line "Patch file: %PATCH_FILE%"
+pushd "%V8_DIR%" >nul 2>&1 || call :fail "PATCH" "Failed to enter %V8_DIR% for patch summary"
+for /f %%I in ('git.exe rev-parse HEAD') do set V8_HEAD=%%I
+popd >nul
+call :log_line "V8 HEAD before patch: %V8_HEAD%"
 call "%PATCH_HELPER%" "%PATCH_FILE%" "%V8_DIR%" "%PATCH_LOG%" true
 if errorlevel 1 call :fail_with_log "PATCH" "%PATCH_LOG%" "Patch helper failed"
 findstr /c:"PATCH_STATUS=" "%PATCH_LOG%" >nul 2>&1
 if errorlevel 1 call :fail_with_log "PATCH" "%PATCH_LOG%" "Patch helper did not emit PATCH_STATUS"
+for /f "tokens=1,* delims==" %%A in ('findstr /c:"PATCH_STATUS=" "%PATCH_LOG%"') do set PATCH_STATUS_VALUE=%%B
+call :log_line "Patch helper summary: PATCH_STATUS=%PATCH_STATUS_VALUE%"
 
 if not exist "%DASM_SOURCE%" call :fail "CLANG" "Source file not found: %DASM_SOURCE%"
 
@@ -265,10 +275,10 @@ popd >nul
 
 call :stage "VERIFY_ARTIFACT"
 if not exist "%OUTPUT_PATH%" (
-    call :append_command_output "%STATE_LOG%" "cmd /d /c dir /a \"%WORKSPACE_DIR%\artifacts\""
+    call :append_command_output "%STATE_LOG%" "dir /a \"%ARTIFACTS_DIR%\""
     call :fail_with_log "VERIFY_ARTIFACT" "%CLANG_LOG%" "Expected artifact not found: %OUTPUT_PATH%"
 )
-call :append_command_output "%STATE_LOG%" "cmd /d /c dir /a \"%WORKSPACE_DIR%\artifacts\""
+call :append_command_output "%STATE_LOG%" "dir /a \"%ARTIFACTS_DIR%\""
 call :log_line "Build successful: %OUTPUT_PATH%"
 call :log_line "STATE_LOG: %STATE_LOG%"
 exit /b 0
@@ -278,6 +288,7 @@ exit /b 0
 >> "%BUILD_LOG%" echo Workspace: %WORKSPACE_DIR%
 >> "%BUILD_LOG%" echo Build root: %BUILD_ROOT%
 >> "%BUILD_LOG%" echo V8 dir: %V8_DIR%
+>> "%BUILD_LOG%" echo Artifacts dir: %ARTIFACTS_DIR%
 >> "%BUILD_LOG%" echo Home: %HOMEDRIVE%%HOMEPATH%
 >> "%BUILD_LOG%" echo Runner temp: %RUNNER_TEMP%
 >> "%BUILD_LOG%" echo GITHUB_WORKSPACE: %GITHUB_WORKSPACE%
@@ -313,7 +324,7 @@ exit /b 0
 
 :append_command_output
 >> "%~1" echo =====[ CMD:%~2 ]=====
-cmd /d /c "%~2" >> "%~1" 2>&1
+cmd /d /c %~2 >> "%~1" 2>&1
 >> "%~1" echo.
 exit /b 0
 
@@ -321,7 +332,7 @@ exit /b 0
 where %~1 >nul 2>&1
 if errorlevel 1 (
     call :log_line "ERROR[INIT]: Required tool not found: %~1"
-    call :append_command_output "%BUILD_LOG%" "cmd /d /c dir /a \"%WORKSPACE_DIR%\artifacts\""
+    call :append_command_output "%BUILD_LOG%" "dir /a \"%ARTIFACTS_DIR%\""
     exit 1
 )
 exit /b 0
@@ -330,10 +341,10 @@ exit /b 0
 call :log_line "ERROR[%~1]: %~3"
 call :log_line "See log: %~2"
 if exist "%~2" type "%~2"
-call :append_command_output "%BUILD_LOG%" "cmd /d /c dir /a \"%WORKSPACE_DIR%\artifacts\""
+call :append_command_output "%BUILD_LOG%" "dir /a \"%ARTIFACTS_DIR%\""
 exit 1
 
 :fail
 call :log_line "ERROR[%~1]: %~2"
-call :append_command_output "%BUILD_LOG%" "cmd /d /c dir /a \"%WORKSPACE_DIR%\artifacts\""
+call :append_command_output "%BUILD_LOG%" "dir /a \"%ARTIFACTS_DIR%\""
 exit 1

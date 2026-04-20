@@ -1,13 +1,7 @@
 @echo off
-REM apply-patch.cmd - 多级退避 V8 Patch 应用脚本 (Windows 版本)
+REM apply-patch.cmd - multi-level V8 patch application helper (Windows)
 REM
-REM 用法: apply-patch.cmd <patch_file> <v8_dir> <log_file> [abort_on_failure]
-REM
-REM 参数:
-REM   patch_file        - patch 文件的绝对路径
-REM   v8_dir            - V8 源码目录的绝对路径
-REM   log_file          - 日志文件的绝对路径
-REM   abort_on_failure  - 失败时是否中止 (true/false, 默认: true)
+REM Usage: apply-patch.cmd <patch_file> <v8_dir> <log_file> [abort_on_failure]
 
 setlocal enabledelayedexpansion
 
@@ -16,107 +10,86 @@ set V8_DIR=%~2
 set LOG_FILE=%~3
 set ABORT_ON_FAILURE=%~4
 set PATCH_STATUS=failed
+set PYTHON_CMD=
+set SCRIPT_DIR=%~dp0
+set SEMANTIC_SCRIPT=%SCRIPT_DIR%semantic-patches.py
 if "%ABORT_ON_FAILURE%"=="" set ABORT_ON_FAILURE=true
 
 if "%PATCH_FILE%"=="" (
-    echo 错误: 缺少必需参数
-    echo 用法: %~nx0 ^<patch_file^> ^<v8_dir^> ^<log_file^> [abort_on_failure]
+    echo ERROR: Missing patch_file argument
     exit /b 1
 )
 
 if "%V8_DIR%"=="" (
-    echo 错误: 缺少必需参数
-    echo 用法: %~nx0 ^<patch_file^> ^<v8_dir^> ^<log_file^> [abort_on_failure]
+    echo ERROR: Missing v8_dir argument
     exit /b 1
 )
 
 if "%LOG_FILE%"=="" (
-    echo 错误: 缺少必需参数
-    echo 用法: %~nx0 ^<patch_file^> ^<v8_dir^> ^<log_file^> [abort_on_failure]
+    echo ERROR: Missing log_file argument
     exit /b 1
 )
 
 if not exist "%PATCH_FILE%" (
-    echo 错误: Patch 文件不存在: %PATCH_FILE%
+    echo ERROR: Patch file not found: %PATCH_FILE%
     exit /b 1
 )
 
 if not exist "%V8_DIR%" (
-    echo 错误: V8 目录不存在: %V8_DIR%
+    echo ERROR: V8 directory not found: %V8_DIR%
     exit /b 1
 )
 
 for %%F in ("%LOG_FILE%") do set LOG_DIR=%%~dpF
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
 
-echo =====[ V8 Patch Application - Multi-level Fallback ]===== > "%LOG_FILE%"
-echo Patch 文件: %PATCH_FILE% >> "%LOG_FILE%"
-echo V8 目录: %V8_DIR% >> "%LOG_FILE%"
-echo 日志文件: %LOG_FILE% >> "%LOG_FILE%"
-echo 失败时中止: %ABORT_ON_FAILURE% >> "%LOG_FILE%"
-echo 时间戳: %date% %time% >> "%LOG_FILE%"
-echo. >> "%LOG_FILE%"
+> "%LOG_FILE%" echo =====[ V8 Patch Application - Multi-level Fallback ]=====
+>> "%LOG_FILE%" echo Patch file: %PATCH_FILE%
+>> "%LOG_FILE%" echo V8 dir: %V8_DIR%
+>> "%LOG_FILE%" echo Log file: %LOG_FILE%
+>> "%LOG_FILE%" echo Abort on failure: %ABORT_ON_FAILURE%
+>> "%LOG_FILE%" echo Timestamp: %date% %time%
+>> "%LOG_FILE%" echo.
 
-echo =====[ V8 Patch Application - Multi-level Fallback ]=====
-echo Patch 文件: %PATCH_FILE%
-echo V8 目录: %V8_DIR%
-echo 日志文件: %LOG_FILE%
-echo 失败时中止: %ABORT_ON_FAILURE%
-echo 时间戳: %date% %time%
-echo.
-
+call :log_line "===== [PATCH_HELPER] START ====="
+call :log_line "Patch file: %PATCH_FILE%"
+call :log_line "V8 dir: %V8_DIR%"
+call :log_line "Semantic script: %SEMANTIC_SCRIPT%"
 call :log_status
 call :do_reset
 
-echo [检查] 检测 patch 是否已经应用...
-echo [检查] 检测 patch 是否已经应用... >> "%LOG_FILE%"
+call :log_line "[CHECK] Testing whether patch is already applied"
 cd /d "%V8_DIR%"
+git.exe rev-parse HEAD >> "%LOG_FILE%" 2>&1
 
 git.exe apply --check --reverse "%PATCH_FILE%" >nul 2>&1
 if not errorlevel 1 (
     set PATCH_STATUS=already_applied
-    echo [检查] Patch 已经应用过，跳过
-    echo [检查] Patch 已经应用过，跳过 >> "%LOG_FILE%"
+    call :log_line "[CHECK] Patch is already applied"
     call :log_status
     exit /b 0
 )
 
-echo [检查] Patch 尚未应用，继续尝试应用
-echo [检查] Patch 尚未应用，继续尝试应用 >> "%LOG_FILE%"
-echo.
-echo. >> "%LOG_FILE%"
-
-echo [第1级] 尝试使用 git apply...
-echo [第1级] 尝试使用 git apply... >> "%LOG_FILE%"
-cd /d "%V8_DIR%"
-
+call :log_line "[CHECK] Patch is not applied yet"
+call :log_line "[LEVEL 1] Trying git apply"
 git.exe apply --check "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
-    echo [LEVEL 1] Patch 检查通过，正在应用...
-    echo [LEVEL 1] Patch 检查通过，正在应用... >> "%LOG_FILE%"
+    call :log_line "[LEVEL 1] git apply --check passed"
     git.exe apply --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
     if not errorlevel 1 (
         set PATCH_STATUS=applied_git
         call :verify_patch_state
         if errorlevel 1 goto :verification_failed
-        echo [LEVEL 1] 成功: Patch 已通过 git apply 应用
-        echo [LEVEL 1] 成功: Patch 已通过 git apply 应用 >> "%LOG_FILE%"
+        call :log_line "[LEVEL 1] Patch applied successfully"
         call :log_status
         exit /b 0
     )
 )
-
-echo [LEVEL 1] git apply 失败
-echo [LEVEL 1] git apply 失败 >> "%LOG_FILE%"
-echo.
-echo. >> "%LOG_FILE%"
-
+call :log_line "[LEVEL 1] git apply failed"
+call :log_git_apply_failures
 call :do_reset
 
-echo [第2级] 尝试使用 git apply 三向合并...
-echo [第2级] 尝试使用 git apply 三向合并... >> "%LOG_FILE%"
-cd /d "%V8_DIR%"
-
+call :log_line "[LEVEL 2] Trying git apply -3"
 git.exe apply -3 --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
     git.exe diff --check 2>&1 | findstr /C:"conflict" >nul
@@ -124,54 +97,34 @@ if not errorlevel 1 (
         set PATCH_STATUS=applied_3way
         call :verify_patch_state
         if errorlevel 1 goto :verification_failed
-        echo [LEVEL 2] 成功: Patch 已通过三向合并应用
-        echo [LEVEL 2] 成功: Patch 已通过三向合并应用 >> "%LOG_FILE%"
+        call :log_line "[LEVEL 2] Three-way patch apply succeeded"
         call :log_status
         exit /b 0
     ) else (
-        echo [LEVEL 2] 三向合并产生了冲突
-        echo [LEVEL 2] 三向合并产生了冲突 >> "%LOG_FILE%"
+        call :log_line "[LEVEL 2] Three-way merge introduced conflicts"
     )
 )
-
-echo [LEVEL 2] git apply -3 失败
-echo [LEVEL 2] git apply -3 失败 >> "%LOG_FILE%"
-echo.
-echo. >> "%LOG_FILE%"
-
+call :log_line "[LEVEL 2] git apply -3 failed"
+call :log_git_apply_failures
 call :do_reset
 
-echo [第3级] 尝试使用 git apply --ignore-whitespace...
-echo [第3级] 尝试使用 git apply --ignore-whitespace... >> "%LOG_FILE%"
-cd /d "%V8_DIR%"
-
+call :log_line "[LEVEL 3] Trying git apply --ignore-whitespace"
 git.exe apply --ignore-whitespace --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
     set PATCH_STATUS=applied_ignore_whitespace
     call :verify_patch_state
     if errorlevel 1 goto :verification_failed
-    echo [LEVEL 3] 成功: Patch 已通过 --ignore-whitespace 应用
-    echo [LEVEL 3] 成功: Patch 已通过 --ignore-whitespace 应用 >> "%LOG_FILE%"
+    call :log_line "[LEVEL 3] Patch applied with --ignore-whitespace"
     call :log_status
     exit /b 0
 )
-
-echo [LEVEL 3] git apply --ignore-whitespace 失败
-echo [LEVEL 3] git apply --ignore-whitespace 失败 >> "%LOG_FILE%"
-echo.
-echo. >> "%LOG_FILE%"
-
+call :log_line "[LEVEL 3] git apply --ignore-whitespace failed"
+call :log_git_apply_failures
 call :do_reset
 
-echo [第4级] 尝试使用语义化替换...
-echo [第4级] 尝试使用语义化替换... >> "%LOG_FILE%"
-
-set SCRIPT_DIR=%~dp0
-set SEMANTIC_SCRIPT=%SCRIPT_DIR%semantic-patches.py
-
+call :log_line "[LEVEL 4] Trying semantic fallback"
 if not exist "%SEMANTIC_SCRIPT%" (
-    echo [LEVEL 4] 语义化替换脚本不存在: %SEMANTIC_SCRIPT%
-    echo [LEVEL 4] 语义化替换脚本不存在: %SEMANTIC_SCRIPT% >> "%LOG_FILE%"
+    call :log_line "[LEVEL 4] Semantic script is missing"
     goto :all_failed
 )
 
@@ -179,8 +132,7 @@ where python3 >nul 2>&1
 if errorlevel 1 (
     where python >nul 2>&1
     if errorlevel 1 (
-        echo [LEVEL 4] Python 未安装
-        echo [LEVEL 4] Python 未安装 >> "%LOG_FILE%"
+        call :log_line "[LEVEL 4] Python executable was not found"
         goto :all_failed
     )
     set PYTHON_CMD=python
@@ -188,106 +140,118 @@ if errorlevel 1 (
     set PYTHON_CMD=python3
 )
 
-echo [LEVEL 4] 正在执行语义化替换脚本...
-echo [LEVEL 4] 正在执行语义化替换脚本... >> "%LOG_FILE%"
+call :log_line "[LEVEL 4] Python command: %PYTHON_CMD%"
+call :append_command_output "%LOG_FILE%" "git.exe rev-parse HEAD"
+call :append_command_output "%LOG_FILE%" "where %PYTHON_CMD%"
 %PYTHON_CMD% "%SEMANTIC_SCRIPT%" "%V8_DIR%" "%LOG_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
     set PATCH_STATUS=applied_semantic
     call :verify_patch_state
     if errorlevel 1 goto :verification_failed
-    echo [LEVEL 4] 成功: Patch 已通过语义化替换应用
-    echo [LEVEL 4] 成功: Patch 已通过语义化替换应用 >> "%LOG_FILE%"
+    call :log_line "[LEVEL 4] Semantic fallback succeeded"
     call :log_status
     exit /b 0
 )
 
-echo [LEVEL 4] 语义化替换失败
-echo [LEVEL 4] 语义化替换失败 >> "%LOG_FILE%"
+call :log_line "[LEVEL 4] Semantic fallback failed"
+set PATCH_STATUS=failed_semantic
+call :log_status
+goto :all_failed
 
 :verification_failed
-echo [VERIFY] Patch 状态验证失败
-echo [VERIFY] Patch 状态验证失败 >> "%LOG_FILE%"
+call :log_line "[VERIFY] Patch state verification failed"
 set PATCH_STATUS=failed_verification
 call :log_status
 
 :all_failed
-echo. >> "%LOG_FILE%"
-echo ======================================== >> "%LOG_FILE%"
-echo 失败: 所有 patch 应用方法都失败了 >> "%LOG_FILE%"
-echo ======================================== >> "%LOG_FILE%"
-
-echo.
-echo ========================================
-echo 失败: 所有 patch 应用方法都失败了
-echo ========================================
-
+>> "%LOG_FILE%" echo.
+>> "%LOG_FILE%" echo ========================================
+>> "%LOG_FILE%" echo FAILURE: all patch application methods failed
+>> "%LOG_FILE%" echo ========================================
+call :log_line "========================================"
+call :log_line "FAILURE: all patch application methods failed"
+call :log_line "========================================"
 call :log_status
 if /i "%ABORT_ON_FAILURE%"=="true" (
-    echo 由于 patch 应用失败，构建已中止
-    echo 请检查日志文件: %LOG_FILE%
+    call :log_line "Build is stopping because patch application failed"
+    call :log_line "Review patch log: %LOG_FILE%"
     exit /b 1
 ) else (
-    echo 警告: 继续构建但未应用 patch
-    echo 注意: v8dasm 可能功能不完整
+    call :log_line "Continuing without patch application"
     exit /b 0
 )
 
 :do_reset
-echo [第0级] 重置 V8 仓库到干净状态...
-echo [第0级] 重置 V8 仓库到干净状态... >> "%LOG_FILE%"
-
+call :log_line "[RESET] Resetting V8 checkout to a clean state"
 pushd "%V8_DIR%" >nul 2>&1 || (
-    echo [RESET] 无法进入 V8 目录: %V8_DIR%
-    echo [RESET] 无法进入 V8 目录: %V8_DIR% >> "%LOG_FILE%"
+    call :log_line "[RESET] Could not enter V8 dir"
     exit /b 0
 )
 
 git.exe rev-parse --is-inside-work-tree >nul 2>&1 || (
-    echo [RESET] 非 git 仓库，跳过重置
-    echo [RESET] 非 git 仓库，跳过重置 >> "%LOG_FILE%"
+    call :log_line "[RESET] Directory is not a git worktree; skipping reset"
     popd
     exit /b 0
 )
 
 git.exe reset --hard HEAD >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (
-    echo [RESET] git reset 失败，继续后续 patch 尝试
-    echo [RESET] git reset 失败，继续后续 patch 尝试 >> "%LOG_FILE%"
+    call :log_line "[RESET] git reset --hard failed; continuing"
     popd
     exit /b 0
 )
 
 git.exe clean -fd >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (
-    echo [RESET] git clean 失败，继续后续 patch 尝试
-    echo [RESET] git clean 失败，继续后续 patch 尝试 >> "%LOG_FILE%"
+    call :log_line "[RESET] git clean -fd failed; continuing"
     popd
     exit /b 0
 )
 
-echo [RESET] 仓库已重置到干净状态
-echo [RESET] 仓库已重置到干净状态 >> "%LOG_FILE%"
+call :log_line "[RESET] Checkout is clean"
 popd
 exit /b 0
 
 :verify_patch_state
 git.exe apply --check --reverse "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
 if not errorlevel 1 (
-    echo [VERIFY] git apply --check --reverse 成功
-    echo [VERIFY] git apply --check --reverse 成功 >> "%LOG_FILE%"
+    call :log_line "[VERIFY] Reverse patch check passed"
     exit /b 0
 )
 
-echo [VERIFY] 反向 patch 校验失败，尝试语义校验
-echo [VERIFY] 反向 patch 校验失败，尝试语义校验 >> "%LOG_FILE%"
+call :log_line "[VERIFY] Reverse patch check failed; trying semantic verification"
+if "%PYTHON_CMD%"=="" (
+    where python3 >nul 2>&1
+    if errorlevel 1 (
+        where python >nul 2>&1
+        if errorlevel 1 exit /b 1
+        set PYTHON_CMD=python
+    ) else (
+        set PYTHON_CMD=python3
+    )
+)
 %PYTHON_CMD% "%SEMANTIC_SCRIPT%" --verify "%V8_DIR%" "%LOG_FILE%" >> "%LOG_FILE%" 2>&1
 if errorlevel 1 exit /b 1
+call :log_line "[VERIFY] Semantic verification passed"
+exit /b 0
 
-echo [VERIFY] 语义校验成功
-echo [VERIFY] 语义校验成功 >> "%LOG_FILE%"
+:log_git_apply_failures
+>> "%LOG_FILE%" echo -----[ git apply failure summary ]-----
+git.exe apply --check --verbose "%PATCH_FILE%" >> "%LOG_FILE%" 2>&1
+>> "%LOG_FILE%" echo --------------------------------------
+exit /b 0
+
+:append_command_output
+>> "%~1" echo =====[ CMD:%~2 ]=====
+cmd /d /c "%~2" >> "%~1" 2>&1
+>> "%~1" echo.
 exit /b 0
 
 :log_status
-echo PATCH_STATUS=%PATCH_STATUS%
-echo PATCH_STATUS=%PATCH_STATUS% >> "%LOG_FILE%"
+call :log_line "PATCH_STATUS=%PATCH_STATUS%"
+exit /b 0
+
+:log_line
+echo %~1
+>> "%LOG_FILE%" echo %~1
 exit /b 0
