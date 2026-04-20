@@ -208,6 +208,9 @@ class SemanticPatcher:
         signature = "void HeapObject::HeapObjectShortPrint(std::ostream& os)"
         body_range = self._find_function_body(content, signature)
         if body_range is None:
+            self.log(f"[SEMANTIC][objects.cc] reason=signature_not_found signature={signature}")
+            for line in content[:1200].replace("\r\n", "\n").split("\n"):
+                self.log(f"[SEMANTIC][objects.cc] {line}")
             return "not_matched_unverified"
 
         body_start, body_end = body_range
@@ -232,7 +235,10 @@ class SemanticPatcher:
         ]
         already_done = all(marker in body for marker in required_markers)
         if self.verify_only:
-            return "already_target_state" if already_done else "not_matched_unverified"
+            if already_done:
+                return "already_target_state"
+            log_objects_cc_context("verify_only_not_matched", body)
+            return "not_matched_unverified"
 
         updated_body = body
         changed = False
