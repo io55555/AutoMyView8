@@ -153,14 +153,9 @@ class SemanticPatcher:
         body = content[body_start:body_end]
 
         source_removed = "PrintSourceCode(os);" not in body
-        bytecode_present = (
-            "Start BytecodeArray" in body
-            and "HasBytecodeArray()" in body
-            and "GetBytecodeArray(GetIsolate()).get()->Disassemble(os);" in body
-        )
 
         if self.verify_only:
-            return "already_target_state" if source_removed and bytecode_present else "not_matched_unverified"
+            return "already_target_state" if source_removed else "not_matched_unverified"
 
         updated_body = body
         changed = False
@@ -170,31 +165,8 @@ class SemanticPatcher:
             updated_body = re.sub(source_pattern, "", updated_body, count=1)
             changed = True
 
-        if "Start BytecodeArray" not in updated_body:
-            bytecode_block = (
-                '  if (this->HasBytecodeArray()) {\n'
-                '    os << "\\nStart BytecodeArray\\n";\n'
-                '    this->GetBytecodeArray(GetIsolate()).get()->Disassemble(os);\n'
-                '    os << "\\nEnd BytecodeArray\\n";\n'
-                '    os << std::flush;\n'
-                '  }\n'
-            )
-            newline_pattern = r'(\s*os << "\\n";\n)(\s*)$'
-            match = re.search(newline_pattern, updated_body)
-            if match:
-                updated_body = (
-                    updated_body[: match.start()]
-                    + match.group(1)
-                    + bytecode_block
-                    + match.group(2)
-                    + updated_body[match.end() :]
-                )
-                changed = True
-            else:
-                return "not_matched_unverified"
-
         if not changed:
-            return "already_target_state" if source_removed and bytecode_present else "not_matched_unverified"
+            return "already_target_state" if source_removed else "not_matched_unverified"
 
         new_content = content[:body_start] + updated_body + content[body_end:]
         if not self._write_file(file_path, new_content):
@@ -209,12 +181,7 @@ class SemanticPatcher:
 
         updated_body = updated[updated_range[0]:updated_range[1]]
         source_removed = "PrintSourceCode(os);" not in updated_body
-        bytecode_present = (
-            "Start BytecodeArray" in updated_body
-            and "HasBytecodeArray()" in updated_body
-            and "GetBytecodeArray(GetIsolate()).get()->Disassemble(os);" in updated_body
-        )
-        return "applied_now" if source_removed and bytecode_present else "failed"
+        return "applied_now" if source_removed else "failed"
 
     def patch_objects_cc(self) -> str:
         file_path = self.v8_dir / "src/objects/objects.cc"

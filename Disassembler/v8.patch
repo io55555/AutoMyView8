@@ -10,17 +10,6 @@ index 5b546e29926..45d7b50b7f5 100644
    // Script files are often large, thus only print their {Brief} representation.
    os << "\n - script: " << Brief(script());
    os << "\n - function token position: " << function_token_position();
-@@ -1710,6 +1709,12 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {
-     os << "<none>";
-   }
-   os << "\n";
-+  if (this->HasBytecodeArray()) {
-+    os << "\nStart BytecodeArray\n";
-+    this->GetBytecodeArray(GetIsolate()).get()->Disassemble(os);
-+    os << "\nEnd BytecodeArray\n";
-+    os << std::flush;
-+  }
- }
  
  void JSGlobalProxy::JSGlobalProxyPrint(std::ostream& os) {
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
