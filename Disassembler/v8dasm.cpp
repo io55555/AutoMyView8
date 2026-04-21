@@ -1,9 +1,13 @@
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
-#include "include/v8.h"
-#include "include/libplatform/libplatform.h"
+#include "v8.h"
+#include "libplatform/libplatform.h"
 
 using namespace v8;
 

@@ -14,7 +14,8 @@
       "Bash(git show *)",
       "Bash(gh api *)",
       "WebFetch(domain:gist.github.com)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(F:/node-v24.11.0-win-x64/AutoView8/scripts/v8dasm-builders/build-windows.cmd *)"
     ]
   }
 }
