@@ -143,7 +143,7 @@ call :log_line "[LEVEL 4] Python command: %PYTHON_CMD%"
 call :append_command_output "%LOG_FILE%" "git.exe rev-parse HEAD"
 call :append_command_output "%LOG_FILE%" "where %PYTHON_CMD%"
 call :log_line "[LEVEL 4] Semantic script writes directly to the patch log"
-%PYTHON_CMD% "%SEMANTIC_SCRIPT%" "%V8_DIR%" "%LOG_FILE%"
+call %PYTHON_CMD% "%SEMANTIC_SCRIPT%" "%V8_DIR%" "%LOG_FILE%"
 if not errorlevel 1 (
     set PATCH_STATUS=applied_semantic
     call :verify_patch_state
@@ -230,7 +230,7 @@ if "%PYTHON_CMD%"=="" (
         set PYTHON_CMD=python3
     )
 )
-%PYTHON_CMD% "%SEMANTIC_SCRIPT%" --verify "%V8_DIR%" "%LOG_FILE%" >> "%LOG_FILE%" 2>&1
+call %PYTHON_CMD% "%SEMANTIC_SCRIPT%" --verify "%V8_DIR%" "%LOG_FILE%" >> "%LOG_FILE%" 2>&1
 if errorlevel 1 exit /b 1
 call :log_line "[VERIFY] Semantic verification passed"
 exit /b 0

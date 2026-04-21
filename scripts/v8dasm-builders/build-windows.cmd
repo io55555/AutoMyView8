@@ -221,7 +221,9 @@ call "%PATCH_HELPER%" "%PATCH_FILE%" "%V8_DIR%" "%PATCH_LOG%" true
 if errorlevel 1 call :fail_with_log "PATCH" "%PATCH_LOG%" "Patch helper failed"
 findstr /c:"PATCH_STATUS=" "%PATCH_LOG%" >nul 2>&1
 if errorlevel 1 call :fail_with_log "PATCH" "%PATCH_LOG%" "Patch helper did not emit PATCH_STATUS"
+set PATCH_STATUS_VALUE=
 for /f "tokens=1,* delims==" %%A in ('findstr /c:"PATCH_STATUS=" "%PATCH_LOG%"') do set PATCH_STATUS_VALUE=%%B
+if "%PATCH_STATUS_VALUE%"=="" call :fail_with_log "PATCH" "%PATCH_LOG%" "Patch helper emitted PATCH_STATUS lines but none could be parsed"
 call :log_line "Patch helper summary: PATCH_STATUS=%PATCH_STATUS_VALUE%"
 
 if not exist "%DASM_SOURCE%" call :fail "CLANG" "Source file not found: %DASM_SOURCE%"
