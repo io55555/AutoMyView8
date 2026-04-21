@@ -156,7 +156,7 @@ class SemanticPatcher:
         bytecode_present = (
             "Start BytecodeArray" in body
             and "HasBytecodeArray()" in body
-            and "GetBytecodeArray(GetIsolate()).Disassemble(os);" in body
+            and "GetBytecodeArray().Disassemble(os);" in body
         )
 
         if self.verify_only:
@@ -174,7 +174,7 @@ class SemanticPatcher:
             bytecode_block = (
                 '  if (this->HasBytecodeArray()) {\n'
                 '    os << "\\nStart BytecodeArray\\n";\n'
-                '    this->GetBytecodeArray(GetIsolate()).Disassemble(os);\n'
+                '    this->GetBytecodeArray().Disassemble(os);\n'
                 '    os << "\\nEnd BytecodeArray\\n";\n'
                 '    os << std::flush;\n'
                 '  }\n'
@@ -212,7 +212,7 @@ class SemanticPatcher:
         bytecode_present = (
             "Start BytecodeArray" in updated_body
             and "HasBytecodeArray()" in updated_body
-            and "GetBytecodeArray(GetIsolate()).Disassemble(os);" in updated_body
+            and "GetBytecodeArray().Disassemble(os);" in updated_body
         )
         return "applied_now" if source_removed and bytecode_present else "failed"
 
