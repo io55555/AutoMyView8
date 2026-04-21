@@ -265,8 +265,6 @@ clang++ "%DASM_SOURCE%" ^
     -O2 ^
     -Iinclude ^
     -Lout.gn\x64.release\obj ^
-    -lv8_libbase ^
-    -lv8_libplatform ^
     -lv8_monolith ^
     -o "%OUTPUT_PATH%" > "%CLANG_LOG%" 2>&1
 if errorlevel 1 (
