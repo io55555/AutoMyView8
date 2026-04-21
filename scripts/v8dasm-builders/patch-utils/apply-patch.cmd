@@ -230,7 +230,7 @@ if "%PYTHON_CMD%"=="" (
         set PYTHON_CMD=python3
     )
 )
-call %PYTHON_CMD% "%SEMANTIC_SCRIPT%" --verify "%V8_DIR%" "%LOG_FILE%" >> "%LOG_FILE%" 2>&1
+call %PYTHON_CMD% "%SEMANTIC_SCRIPT%" --verify "%V8_DIR%" "%LOG_FILE%"
 if errorlevel 1 exit /b 1
 call :log_line "[VERIFY] Semantic verification passed"
 exit /b 0
