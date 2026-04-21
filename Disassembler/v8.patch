@@ -14,10 +14,12 @@ index 5b546e29926..45d7b50b7f5 100644
      os << "<none>";
    }
    os << "\n";
-+  os << "\nStart BytecodeArray\n";
-+  this->GetActiveBytecodeArray().Disassemble(os);
-+  os << "\nEnd BytecodeArray\n";
-+  os << std::flush;
++  if (this->HasBytecodeArray()) {
++    os << "\nStart BytecodeArray\n";
++    this->GetBytecodeArray(GetIsolate()).Disassemble(os);
++    os << "\nEnd BytecodeArray\n";
++    os << std::flush;
++  }
  }
  
  void JSGlobalProxy::JSGlobalProxyPrint(std::ostream& os) {

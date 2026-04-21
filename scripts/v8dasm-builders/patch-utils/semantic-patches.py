@@ -153,7 +153,11 @@ class SemanticPatcher:
         body = content[body_start:body_end]
 
         source_removed = "PrintSourceCode(os);" not in body
-        bytecode_present = "Start BytecodeArray" in body and "GetActiveBytecodeArray().Disassemble(os);" in body
+        bytecode_present = (
+            "Start BytecodeArray" in body
+            and "HasBytecodeArray()" in body
+            and "GetBytecodeArray(GetIsolate()).Disassemble(os);" in body
+        )
 
         if self.verify_only:
             return "already_target_state" if source_removed and bytecode_present else "not_matched_unverified"
@@ -168,10 +172,12 @@ class SemanticPatcher:
 
         if "Start BytecodeArray" not in updated_body:
             bytecode_block = (
-                '  os << "\\nStart BytecodeArray\\n";\n'
-                '  this->GetActiveBytecodeArray().Disassemble(os);\n'
-                '  os << "\\nEnd BytecodeArray\\n";\n'
-                '  os << std::flush;\n'
+                '  if (this->HasBytecodeArray()) {\n'
+                '    os << "\\nStart BytecodeArray\\n";\n'
+                '    this->GetBytecodeArray(GetIsolate()).Disassemble(os);\n'
+                '    os << "\\nEnd BytecodeArray\\n";\n'
+                '    os << std::flush;\n'
+                '  }\n'
             )
             newline_pattern = r'(\s*os << "\\n";\n)(\s*)$'
             match = re.search(newline_pattern, updated_body)
@@ -203,7 +209,11 @@ class SemanticPatcher:
 
         updated_body = updated[updated_range[0]:updated_range[1]]
         source_removed = "PrintSourceCode(os);" not in updated_body
-        bytecode_present = "Start BytecodeArray" in updated_body and "GetActiveBytecodeArray().Disassemble(os);" in updated_body
+        bytecode_present = (
+            "Start BytecodeArray" in updated_body
+            and "HasBytecodeArray()" in updated_body
+            and "GetBytecodeArray(GetIsolate()).Disassemble(os);" in updated_body
+        )
         return "applied_now" if source_removed and bytecode_present else "failed"
 
     def patch_objects_cc(self) -> str:
