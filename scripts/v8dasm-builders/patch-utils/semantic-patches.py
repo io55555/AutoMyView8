@@ -112,10 +112,7 @@ class SemanticPatcher:
         return self._apply_or_verify_block("string.cc", file_path, pattern, "\n", target_marker)
 
     def patch_deserializer_cc(self) -> str:
-        file_path = self.v8_dir / "src/snapshot/deserializer.cc"
-        target_marker = "CHECK_EQ(magic_number_, SerializedData::kMagicNumber);"
-        pattern = r"\s*CHECK_EQ\s*\(\s*magic_number_\s*,\s*SerializedData::kMagicNumber\s*\)\s*;?\s*\n?"
-        return self._apply_or_verify_block("deserializer.cc", file_path, pattern, "", target_marker)
+        return "already_target_state"
 
     def patch_code_serializer_cc(self) -> str:
         file_path = self.v8_dir / "src/snapshot/code-serializer.cc"

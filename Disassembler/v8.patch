@@ -114,15 +114,3 @@ index 3f380e6a2ff..1f55cb9009a 100644
  }
  
  SerializedCodeSanityCheckResult SerializedCodeData::SanityCheckJustSource(
-diff --git a/src/snapshot/deserializer.cc b/src/snapshot/deserializer.cc
-index 09fffbbed37..8ce3b2680ef 100644
---- a/src/snapshot/deserializer.cc
-+++ b/src/snapshot/deserializer.cc
-@@ -210,7 +210,6 @@ Deserializer<IsolateT>::Deserializer(IsolateT* isolate,
- #ifdef DEBUG
-   num_api_references_ = GetNumApiReferences(isolate);
- #endif  // DEBUG
--  CHECK_EQ(magic_number_, SerializedData::kMagicNumber);
- }
- 
- template <typename IsolateT>
