@@ -57,12 +57,29 @@ jobs:
           path: ~/depot_tools
           key: depot-tools-windows-${{ runner.os }}
 
+      - name: Restore V8 checkout and build outputs
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ runner.temp }}\v8dasm-${{ matrix.version.v8 }}
+          key: v8dasm-windows-${{ runner.os }}-${{ matrix.version.v8 }}-${{ hashFiles('Disassembler/v8.patch', 'Disassembler/v8dasm.cpp', 'scripts/v8dasm-builders/build-windows.cmd', 'scripts/v8dasm-builders/patch-utils/*', 'configs/v8-versions.json') }}
+          restore-keys: |
+            v8dasm-windows-${{ runner.os }}-${{ matrix.version.v8 }}-
+
       - name: Build v8dasm
         shell: cmd
         env:
           V8_BUILD_ROOT: ${{ runner.temp }}\v8dasm-${{ matrix.version.v8 }}
         run: |
           call scripts\v8dasm-builders\build-windows.cmd ${{ matrix.version.v8 }} "${{ matrix.version.args }}"
+
+      - name: Save V8 checkout and build outputs
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ runner.temp }}\v8dasm-${{ matrix.version.v8 }}
+          key: v8dasm-windows-${{ runner.os }}-${{ matrix.version.v8 }}-${{ hashFiles('Disassembler/v8.patch', 'Disassembler/v8dasm.cpp', 'scripts/v8dasm-builders/build-windows.cmd', 'scripts/v8dasm-builders/patch-utils/*', 'configs/v8-versions.json') }}
 
       - name: Verify artifact exists
         if: success()

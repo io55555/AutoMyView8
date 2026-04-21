@@ -45,6 +45,7 @@ set CLANG_LOG=%WORKSPACE_DIR%\artifacts\logs\clang-%V8_VERSION%.log
 set PATCH_LOG=%WORKSPACE_DIR%\artifacts\logs\patch-%V8_VERSION%.log
 set CHECKOUT_LOG=%WORKSPACE_DIR%\artifacts\logs\checkout-%V8_VERSION%.log
 set STATE_LOG=%WORKSPACE_DIR%\artifacts\logs\state-%V8_VERSION%.log
+set OUT_DIR=%V8_DIR%\out.gn\x64.release
 set OUTPUT_NAME=v8dasm-%V8_VERSION%.exe
 set OUTPUT_PATH=%WORKSPACE_DIR%\artifacts\%OUTPUT_NAME%
 set PATCH_HELPER=%WORKSPACE_DIR%\scripts\v8dasm-builders\patch-utils\apply-patch.cmd
@@ -72,6 +73,7 @@ call :log_line "Ninja log: %NINJA_LOG%"
 call :log_line "Clang log: %CLANG_LOG%"
 
 set DEPOT_TOOLS_WIN_TOOLCHAIN=0
+set DEPOT_TOOLS_UPDATE=0
 if not exist "%USERPROFILE%\depot_tools" (
     call :fail "INIT" "depot_tools not found at %USERPROFILE%\depot_tools"
 )
@@ -167,10 +169,10 @@ if errorlevel 1 (
     popd
     call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git.exe reset --hard HEAD failed"
 )
-git.exe clean -ffd >> "%CHECKOUT_LOG%" 2>&1
+git.exe clean -ffd -e out.gn >> "%CHECKOUT_LOG%" 2>&1
 if errorlevel 1 (
     popd
-    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git.exe clean -ffd failed"
+    call :fail_with_log "CHECKOUT" "%CHECKOUT_LOG%" "git.exe clean -ffd -e out.gn failed"
 )
 git.exe fetch --all --tags >> "%CHECKOUT_LOG%" 2>&1
 if errorlevel 1 (
@@ -266,6 +268,8 @@ clang++ "%DASM_SOURCE%" ^
     -Iinclude ^
     -Lout.gn\x64.release\obj ^
     -lv8_monolith ^
+    -ldbghelp ^
+    -lwinmm ^
     -o "%OUTPUT_PATH%" > "%CLANG_LOG%" 2>&1
 if errorlevel 1 (
     popd
@@ -275,10 +279,10 @@ popd >nul
 
 call :stage "VERIFY_ARTIFACT"
 if not exist "%OUTPUT_PATH%" (
-    call :append_command_output "%STATE_LOG%" "dir /a \"%ARTIFACTS_DIR%\""
+    call :append_command_output "%STATE_LOG%" "dir /a %ARTIFACTS_DIR%"
     call :fail_with_log "VERIFY_ARTIFACT" "%CLANG_LOG%" "Expected artifact not found: %OUTPUT_PATH%"
 )
-call :append_command_output "%STATE_LOG%" "dir /a \"%ARTIFACTS_DIR%\""
+call :append_command_output "%STATE_LOG%" "dir /a %ARTIFACTS_DIR%"
 call :log_line "Build successful: %OUTPUT_PATH%"
 call :log_line "STATE_LOG: %STATE_LOG%"
 exit /b 0
@@ -333,7 +337,7 @@ exit /b 0
 where %~1 >nul 2>&1
 if errorlevel 1 (
     call :log_line "ERROR[INIT]: Required tool not found: %~1"
-    call :append_command_output "%BUILD_LOG%" "dir /a \"%ARTIFACTS_DIR%\""
+    call :append_command_output "%BUILD_LOG%" "dir /a %ARTIFACTS_DIR%"
     exit 1
 )
 exit /b 0
@@ -342,10 +346,10 @@ exit /b 0
 call :log_line "ERROR[%~1]: %~3"
 call :log_line "See log: %~2"
 if exist "%~2" type "%~2"
-call :append_command_output "%BUILD_LOG%" "dir /a \"%ARTIFACTS_DIR%\""
+call :append_command_output "%BUILD_LOG%" "dir /a %ARTIFACTS_DIR%"
 exit 1
 
 :fail
 call :log_line "ERROR[%~1]: %~2"
-call :append_command_output "%BUILD_LOG%" "dir /a \"%ARTIFACTS_DIR%\""
+call :append_command_output "%BUILD_LOG%" "dir /a %ARTIFACTS_DIR%"
 exit 1

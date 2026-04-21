@@ -55,7 +55,6 @@ call :log_line "===== [PATCH_HELPER] START ====="
 call :log_line "Patch file: %PATCH_FILE%"
 call :log_line "V8 dir: %V8_DIR%"
 call :log_line "Semantic script: %SEMANTIC_SCRIPT%"
-call :log_status
 call :do_reset
 
 call :log_line "[CHECK] Testing whether patch is already applied"
