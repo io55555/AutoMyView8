@@ -16,7 +16,7 @@ index 5b546e29926..45d7b50b7f5 100644
    os << "\n";
 +  if (this->HasBytecodeArray()) {
 +    os << "\nStart BytecodeArray\n";
-+    this->GetBytecodeArray().Disassemble(os);
++    this->GetBytecodeArray(GetIsolate()).get()->Disassemble(os);
 +    os << "\nEnd BytecodeArray\n";
 +    os << std::flush;
 +  }
