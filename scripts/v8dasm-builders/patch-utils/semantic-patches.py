@@ -279,39 +279,28 @@ class SemanticPatcher:
                     changed = True
                     sfi_body = next_body
 
-        printer_patches = [
+        printer_wrappers = [
             (
                 "void FixedArray::FixedArrayPrint(std::ostream& os)",
-                'PrintFixedArrayWithHeader(os, this, "FixedArray");\n',
-                (
-                    '  os << "Start FixedArray\\n";\n'
-                    '  PrintFixedArrayWithHeader(os, this, "FixedArray");\n'
-                    '  os << "\\nEnd FixedArray\\n";\n'
-                ),
                 "Start FixedArray",
+                '  os << "Start FixedArray\\n";\n',
+                '  os << "\\nEnd FixedArray\\n";\n',
             ),
             (
                 "void ObjectBoilerplateDescription::ObjectBoilerplateDescriptionPrint",
-                '  os << "\\n - elements:";\n',
-                (
-                    '  os << "Start ObjectBoilerplateDescription\\n";\n'
-                    '  os << "\\n - elements:";\n'
-                ),
                 "Start ObjectBoilerplateDescription",
+                '  os << "Start ObjectBoilerplateDescription\\n";\n',
+                '  os << "\\nEnd ObjectBoilerplateDescription\\n";\n',
             ),
             (
                 "void FixedDoubleArray::FixedDoubleArrayPrint(std::ostream& os)",
-                '  DoPrintElements<FixedDoubleArray>(os, this, length());\n',
-                (
-                    '  os << "Start FixedDoubleArray\\n";\n'
-                    '  DoPrintElements<FixedDoubleArray>(os, this, length());\n'
-                    '  os << "\\nEnd FixedDoubleArray\\n";\n'
-                ),
                 "Start FixedDoubleArray",
+                '  os << "Start FixedDoubleArray\\n";\n',
+                '  os << "\\nEnd FixedDoubleArray\\n";\n',
             ),
         ]
 
-        for signature, anchor, replacement, marker in printer_patches:
+        for signature, marker, prefix, suffix in printer_wrappers:
             if marker in updated_content:
                 continue
             body_range = self._find_function_body(updated_content, signature)
@@ -320,12 +309,9 @@ class SemanticPatcher:
             if body_range is None:
                 continue
             body = updated_content[body_range[0]:body_range[1]]
-            if anchor not in body:
-                continue
-            next_body = body.replace(anchor, replacement, 1)
-            if next_body != body:
-                updated_content = updated_content[:body_range[0]] + next_body + updated_content[body_range[1]:]
-                changed = True
+            next_body = prefix + body + suffix
+            updated_content = updated_content[:body_range[0]] + next_body + updated_content[body_range[1]:]
+            changed = True
 
         if self.verify_only:
             required = [
@@ -391,7 +377,7 @@ class SemanticPatcher:
             has_asm_block = "ASM_WASM_DATA_TYPE" in body
 
             if self.verify_only:
-                return "already_target_state"
+                return "already_target_state" if has_asm_block else "not_matched_unverified"
 
             if has_asm_block:
                 return "already_target_state"
