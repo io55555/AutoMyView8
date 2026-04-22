@@ -255,29 +255,42 @@ class SemanticPatcher:
         sfi_body = updated_content[sfi_range[0]:sfi_range[1]]
         source_removed = "PrintSourceCode(os);" not in sfi_body
         has_bytecode_block = "Start BytecodeArray" in sfi_body and "GetActiveBytecodeArray(isolate)->Disassemble(os);" in sfi_body
+        bytecode_block = (
+            '  os << "\\nStart BytecodeArray\\n";\n'
+            '  GetActiveBytecodeArray(isolate)->Disassemble(os);\n'
+            '  os << "\\nEnd BytecodeArray\\n";\n'
+            '  os << std::flush;\n'
+        )
 
-        if not source_removed:
-            source_pattern = r"\s*PrintSourceCode\(os\);\n"
-            next_body = re.sub(source_pattern, "", sfi_body, count=1)
+        if not has_bytecode_block:
+            source_pattern = r"^\s*PrintSourceCode\(os\);\n"
+            next_body = re.sub(source_pattern, bytecode_block, sfi_body, count=1, flags=re.MULTILINE)
+            if next_body == sfi_body:
+                fallback_anchors = [
+                    '  os << "\\n - script: " << Brief(script());\n',
+                    '  os << "\\n - function token position: " << function_token_position();\n',
+                    '  os << "\\n";\n',
+                ]
+                next_body = sfi_body
+                for anchor in fallback_anchors:
+                    if anchor in next_body:
+                        next_body = next_body.replace(anchor, bytecode_block + anchor, 1)
+                        break
             if next_body != sfi_body:
                 updated_content = updated_content[:sfi_range[0]] + next_body + updated_content[sfi_range[1]:]
                 changed = True
                 sfi_body = next_body
+                source_removed = "PrintSourceCode(os);" not in sfi_body
+                has_bytecode_block = "Start BytecodeArray" in sfi_body and "GetActiveBytecodeArray(isolate)->Disassemble(os);" in sfi_body
 
-        if not has_bytecode_block:
-            tail_anchor = '  os << "\\n";\n'
-            bytecode_block = (
-                '  os << "\\nStart BytecodeArray\\n";\n'
-                '  GetActiveBytecodeArray(isolate)->Disassemble(os);\n'
-                '  os << "\\nEnd BytecodeArray\\n";\n'
-                '  os << std::flush;\n'
-            )
-            if tail_anchor in sfi_body:
-                next_body = sfi_body.replace(tail_anchor, tail_anchor + bytecode_block, 1)
-                if next_body != sfi_body:
-                    updated_content = updated_content[:sfi_range[0]] + next_body + updated_content[sfi_range[1]:]
-                    changed = True
-                    sfi_body = next_body
+        if not source_removed:
+            source_pattern = r"^\s*PrintSourceCode\(os\);\n"
+            next_body = re.sub(source_pattern, "", sfi_body, count=1, flags=re.MULTILINE)
+            if next_body != sfi_body:
+                updated_content = updated_content[:sfi_range[0]] + next_body + updated_content[sfi_range[1]:]
+                changed = True
+                sfi_body = next_body
+                source_removed = "PrintSourceCode(os);" not in sfi_body
 
         printer_wrappers = [
             (
@@ -331,6 +344,11 @@ class SemanticPatcher:
             return "PrintSourceCode(os);" not in candidate_sfi_body and all(
                 marker in candidate_content for marker in required_sfi_markers
             )
+
+        if not has_bytecode_block:
+            self.log("[SEMANTIC][objects-printer.cc] reason=bytecode_anchor_not_found")
+        if not source_removed:
+            self.log("[SEMANTIC][objects-printer.cc] reason=print_sourcecode_not_removed")
 
         optional_missing = [marker for marker in optional_markers if marker not in updated_content]
         if optional_missing:
