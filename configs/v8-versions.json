@@ -2,8 +2,31 @@
   "versions": [
     {
       "v8_version": "13.6.233.17",
-      "node_version": "v24.x",
-      "build_args": "v8_enable_pointer_compression=false"
+      "node_version": "Node.js v24.x",
+      "build_args": "v8_enable_pointer_compression=false",
+      "build_id": "13.6.233.17-node-v24-x",
+      "binary_name": "13.6.233.17.exe"
+    },
+    {
+      "v8_version": "13.0.245.16",
+      "node_version": "Electron v33.0.x",
+      "build_args": "v8_enable_pointer_compression=true v8_enable_sandbox=true",
+      "build_id": "13.0.245.16-electron-v33-0-x",
+      "binary_name": "v8dasm-13.0.245.16-electron-v33.0.x.exe"
+    },
+    {
+      "v8_version": "13.0.245.18",
+      "node_version": "Electron v33.1.x",
+      "build_args": "v8_enable_pointer_compression=true v8_enable_sandbox=true",
+      "build_id": "13.0.245.18-electron-v33-1-x",
+      "binary_name": "v8dasm-13.0.245.18-electron-v33.1.x.exe"
+    },
+    {
+      "v8_version": "13.0.245.20",
+      "node_version": "Electron v33.3.x",
+      "build_args": "v8_enable_pointer_compression=true v8_enable_sandbox=true",
+      "build_id": "13.0.245.20-electron-v33-3-x",
+      "binary_name": "v8dasm-13.0.245.20-electron-v33.3.x.exe"
     }
   ]
 }

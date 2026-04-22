@@ -1,0 +1,6 @@
+*.exe
+*.pyc
+.claude/
+__pycache__/
+Bin/
+logs/

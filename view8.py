@@ -14,6 +14,7 @@ def disassemble(in_file, input_is_disassembled, disassembler):
         print(f"[view8] Using pre-disassembled input={os.path.abspath(out_name)}")
     else:
         print(f"[view8] Invoking cache parser output={os.path.abspath(out_name)}")
+        print("[view8] The cache parser may try multiple local v8dasm candidates when version detection fails or cached data is rejected")
         parse_v8cache_file(in_file, out_name, view8_dir, disassembler)
 
     print(f"[view8] Parsing disassembly from={os.path.abspath(out_name)}")

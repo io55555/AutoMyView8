@@ -46,7 +46,11 @@ set PATCH_LOG=%WORKSPACE_DIR%\artifacts\logs\patch-%V8_VERSION%.log
 set CHECKOUT_LOG=%WORKSPACE_DIR%\artifacts\logs\checkout-%V8_VERSION%.log
 set STATE_LOG=%WORKSPACE_DIR%\artifacts\logs\state-%V8_VERSION%.log
 set OUT_DIR=%V8_DIR%\out.gn\x64.release
-set OUTPUT_NAME=v8dasm-%V8_VERSION%.exe
+if "%V8DASM_OUTPUT_NAME%"=="" (
+    set OUTPUT_NAME=v8dasm-%V8_VERSION%.exe
+) else (
+    set OUTPUT_NAME=%V8DASM_OUTPUT_NAME%
+)
 set OUTPUT_PATH=%WORKSPACE_DIR%\artifacts\%OUTPUT_NAME%
 set PATCH_HELPER=%WORKSPACE_DIR%\scripts\v8dasm-builders\patch-utils\apply-patch.cmd
 set PATCH_FILE=%WORKSPACE_DIR%\Disassembler\v8.patch

@@ -88,9 +88,10 @@ AutoView8/
 
 ### 默认支持的 V8 版本
 
-- **9.4.146.24** - Node.js v16.x
-- **10.2.154.26** - Node.js v18.x
-- **11.3.244.8** - Node.js v20.x
+- **13.6.233.17** - Node.js v24.x
+- **13.0.245.16** - Electron v33.0.x
+- **13.0.245.18** - Electron v33.1.x
+- **13.0.245.20** - Electron v33.3.x
 
 ---
 
@@ -255,8 +256,10 @@ GitHub Actions 在以下情况自动运行：
 1. 访问 [Actions 页面](../../actions)
 2. 选择 "Build V8 Disassembler"
 3. 点击 "Run workflow"
-4. 输入 V8 版本号（如 `10.2.154.26`）
+4. 输入 `configs/v8-versions.json` 中已配置的 V8 版本号（如 `13.0.245.16`）
 5. 点击 "Run workflow"
+
+手动触发会从 `configs/v8-versions.json` 读取对应版本的 `build_args`。这对 Electron 版本很重要，因为它们通常需要 `v8_enable_pointer_compression=true v8_enable_sandbox=true`，不能按 Node.js 参数编译。
 
 ---
 
@@ -267,11 +270,16 @@ GitHub Actions 在以下情况自动运行：
 python view8.py input.jsc output.js
 
 # 指定 v8dasm 路径
-python view8.py input.jsc output.js --path ./v8dasm-10.2.154.26
+python view8.py input.jsc output.js --path ./13.6.233.17.exe
+
+# Electron / Bytenode 样本可指定候选 Electron 二进制
+python view8.py input.jsc output.js --path ./v8dasm-13.0.245.16-electron-v33.0.x.exe
 
 # 查看帮助
 python view8.py --help
 ```
+
+当 `VersionDetector.exe` 无法识别 JSC 文件版本，或者某个候选二进制返回 `CachedData was rejected` 时，`view8.py` 会自动尝试 `Bin/` 目录中的其他本地候选 `v8dasm`，优先尝试 Electron 候选。
 
 详细文档请参考 [View8 说明](README-View8.md)。
 

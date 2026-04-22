@@ -74,9 +74,10 @@ cat configs/v8-versions.json
 ```
 
 当前支持的版本:
-- **9.4.146.24** (Node.js v16.x)
-- **10.2.154.26** (Node.js v18.x)
-- **11.3.244.8** (Node.js v20.x)
+- **13.6.233.17** (Node.js v24.x)
+- **13.0.245.16** (Electron v33.0.x)
+- **13.0.245.18** (Electron v33.1.x)
+- **13.0.245.20** (Electron v33.3.x)
 
 ### 3. 运行编译脚本
 
@@ -184,8 +185,13 @@ build-windows.cmd 10.2.154.26 "v8_enable_pointer_compression=false"
 
 ```bash
 # 使用 View8 完整反编译
-python view8.py input.jsc output.js --path ~/v8/v8/v8dasm-10.2.154.26
+python view8.py input.jsc output.js --path ~/v8/v8/v8dasm-13.6.233.17.exe
+
+# Electron / Bytenode 样本优先尝试 Electron 候选
+python view8.py input.jsc output.js --path ~/v8/v8/v8dasm-13.0.245.16-electron-v33.0.x.exe
 ```
+
+如果 `VersionDetector.exe` 无法识别文件头，或者某个候选二进制在运行时返回 `CachedData was rejected`，`view8.py` 会继续尝试本地其他候选二进制，而不是直接停止。
 
 ### 复制到系统路径 (可选)
 

@@ -33,14 +33,18 @@ jobs:
         id: set-matrix
         run: |
           if [ -n "${{ github.event.inputs.v8_version }}" ]; then
-            echo "matrix={\"version\":[{\"v8\":\"${{ github.event.inputs.v8_version }}\",\"args\":\"v8_enable_pointer_compression=false\"}]}" >> $GITHUB_OUTPUT
+            VERSIONS=$(jq -c --arg version "${{ github.event.inputs.v8_version }}" '[.versions[] | select(.v8_version == $version) | {v8: .v8_version, node: .node_version, args: .build_args, build_id: (.build_id // .v8_version), binary_name: (.binary_name // ("v8dasm-" + .v8_version + ".exe"))}]' configs/v8-versions.json)
+            if [ "$VERSIONS" = "[]" ]; then
+              echo "Requested v8_version not found in configs/v8-versions.json: ${{ github.event.inputs.v8_version }}"
+              exit 1
+            fi
           else
-            VERSIONS=$(jq -c '[.versions[] | {v8: .v8_version, node: .node_version, args: .build_args}]' configs/v8-versions.json)
-            echo "matrix={\"version\":$VERSIONS}" >> $GITHUB_OUTPUT
+            VERSIONS=$(jq -c '[.versions[] | {v8: .v8_version, node: .node_version, args: .build_args, build_id: (.build_id // .v8_version), binary_name: (.binary_name // ("v8dasm-" + .v8_version + ".exe"))}]' configs/v8-versions.json)
           fi
+          echo "matrix={\"version\":$VERSIONS}" >> $GITHUB_OUTPUT
 
   build-windows:
-    name: Windows x64 - V8 ${{ matrix.version.v8 }}
+    name: Windows x64 - ${{ matrix.version.build_id }}
     runs-on: windows-2022
     needs: prepare
     strategy:
@@ -64,15 +68,16 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            ${{ runner.temp }}\v8dasm-${{ matrix.version.v8 }}
-          key: v8dasm-windows-${{ runner.os }}-${{ matrix.version.v8 }}-${{ hashFiles('Disassembler/v8.patch', 'Disassembler/v8dasm.cpp', 'scripts/v8dasm-builders/build-windows.cmd', 'scripts/v8dasm-builders/patch-utils/*', 'configs/v8-versions.json') }}
+            ${{ runner.temp }}\v8dasm-${{ matrix.version.build_id }}
+          key: v8dasm-windows-${{ runner.os }}-${{ matrix.version.build_id }}-${{ hashFiles('Disassembler/v8.patch', 'Disassembler/v8dasm.cpp', 'scripts/v8dasm-builders/build-windows.cmd', 'scripts/v8dasm-builders/patch-utils/*', 'configs/v8-versions.json') }}
           restore-keys: |
-            v8dasm-windows-${{ runner.os }}-${{ matrix.version.v8 }}-
+            v8dasm-windows-${{ runner.os }}-${{ matrix.version.build_id }}-
 
       - name: Build v8dasm
         shell: cmd
         env:
-          V8_BUILD_ROOT: ${{ runner.temp }}\v8dasm-${{ matrix.version.v8 }}
+          V8_BUILD_ROOT: ${{ runner.temp }}\v8dasm-${{ matrix.version.build_id }}
+          V8DASM_OUTPUT_NAME: ${{ matrix.version.binary_name }}
         run: |
           call scripts\v8dasm-builders\build-windows.cmd ${{ matrix.version.v8 }} "${{ matrix.version.args }}"
 
@@ -81,14 +86,14 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: |
-            ${{ runner.temp }}\v8dasm-${{ matrix.version.v8 }}
-          key: v8dasm-windows-${{ runner.os }}-${{ matrix.version.v8 }}-${{ hashFiles('Disassembler/v8.patch', 'Disassembler/v8dasm.cpp', 'scripts/v8dasm-builders/build-windows.cmd', 'scripts/v8dasm-builders/patch-utils/*', 'configs/v8-versions.json') }}
+            ${{ runner.temp }}\v8dasm-${{ matrix.version.build_id }}
+          key: v8dasm-windows-${{ runner.os }}-${{ matrix.version.build_id }}-${{ hashFiles('Disassembler/v8.patch', 'Disassembler/v8dasm.cpp', 'scripts/v8dasm-builders/build-windows.cmd', 'scripts/v8dasm-builders/patch-utils/*', 'configs/v8-versions.json') }}
 
       - name: Verify artifact exists
         if: success()
         shell: bash
         run: |
-          test -f "artifacts/v8dasm-${{ matrix.version.v8 }}.exe"
+          test -f "artifacts/${{ matrix.version.binary_name }}"
 
       - name: Dump artifact directory on failure
         if: failure()
@@ -105,7 +110,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v8dasm-windows-x64-logs-v${{ matrix.version.v8 }}
+          name: v8dasm-windows-x64-logs-${{ matrix.version.build_id }}
           path: artifacts/logs/**
           if-no-files-found: warn
           retention-days: 30
@@ -114,8 +119,8 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: v8dasm-windows-x64-v${{ matrix.version.v8 }}
-          path: artifacts/v8dasm-${{ matrix.version.v8 }}.exe
+          name: v8dasm-windows-x64-${{ matrix.version.build_id }}
+          path: artifacts/${{ matrix.version.binary_name }}
           if-no-files-found: error
           retention-days: 30
 
