@@ -313,27 +313,26 @@ class SemanticPatcher:
             updated_content = updated_content[:body_range[0]] + next_body + updated_content[body_range[1]:]
             changed = True
 
+        required = [
+            "Start BytecodeArray",
+            "GetActiveBytecodeArray(isolate)->Disassemble(os);",
+            "Start FixedArray",
+            "Start ObjectBoilerplateDescription",
+            "Start FixedDoubleArray",
+        ]
+
+        def printer_success(candidate_content: str) -> bool:
+            candidate_sfi_range = self._find_function_body(candidate_content, sfi_signature)
+            if candidate_sfi_range is None:
+                return False
+            candidate_sfi_body = candidate_content[candidate_sfi_range[0]:candidate_sfi_range[1]]
+            return "PrintSourceCode(os);" not in candidate_sfi_body and all(marker in candidate_content for marker in required)
+
         if self.verify_only:
-            required = [
-                "Start BytecodeArray",
-                "GetActiveBytecodeArray(isolate)->Disassemble(os);",
-                "Start FixedArray",
-                "Start ObjectBoilerplateDescription",
-                "Start FixedDoubleArray",
-            ]
-            success = "PrintSourceCode(os);" not in updated_content and all(marker in updated_content for marker in required)
-            return "already_target_state" if success else "not_matched_unverified"
+            return "already_target_state" if printer_success(updated_content) else "not_matched_unverified"
 
         if not changed:
-            required = [
-                "Start BytecodeArray",
-                "GetActiveBytecodeArray(isolate)->Disassemble(os);",
-                "Start FixedArray",
-                "Start ObjectBoilerplateDescription",
-                "Start FixedDoubleArray",
-            ]
-            success = "PrintSourceCode(os);" not in updated_content and all(marker in updated_content for marker in required)
-            return "already_target_state" if success else "not_matched_unverified"
+            return "already_target_state" if printer_success(updated_content) else "not_matched_unverified"
 
         if not self._write_file(file_path, updated_content):
             return "failed"
@@ -342,15 +341,7 @@ class SemanticPatcher:
         if updated is None:
             return "failed"
 
-        required = [
-            "Start BytecodeArray",
-            "GetActiveBytecodeArray(isolate)->Disassemble(os);",
-            "Start FixedArray",
-            "Start ObjectBoilerplateDescription",
-            "Start FixedDoubleArray",
-        ]
-        success = "PrintSourceCode(os);" not in updated and all(marker in updated for marker in required)
-        return "applied_now" if success else "failed"
+        return "applied_now" if printer_success(updated) else "failed"
 
     def patch_objects_cc(self) -> str:
         candidate_files = [
@@ -425,7 +416,7 @@ class SemanticPatcher:
             updated_body = updated[updated_range[0]:updated_range[1]]
             return "applied_now" if "ASM_WASM_DATA_TYPE" in updated_body else "failed"
 
-        return "already_target_state"
+        return "not_matched_unverified"
 
     def apply_all(self) -> bool:
         self.log(f"[SEMANTIC] START verify_only={str(self.verify_only).lower()} v8_dir={self.v8_dir}")
