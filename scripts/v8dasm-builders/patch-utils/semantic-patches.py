@@ -391,6 +391,15 @@ class SemanticPatcher:
                     "Start FixedDoubleArray",
                 ),
                 (
+                    r'(?P<case_indent>\s*)case SHARED_FUNCTION_INFO_TYPE:(?P<body>.*?)(?P<break_indent>\s*)break;\n',
+                    r'\g<case_indent>case SHARED_FUNCTION_INFO_TYPE:\g<body>'
+                    r'\g<break_indent>os << "\\nStart SharedFunctionInfo\\n";\n'
+                    r'\g<break_indent>shared.SharedFunctionInfoPrint(os);\n'
+                    r'\g<break_indent>os << "\\nEnd SharedFunctionInfo\\n";\n'
+                    r'\g<break_indent>break;\n',
+                    "Start SharedFunctionInfo",
+                ),
+                (
                     r'(?P<indent>\s*)(?P<call>[^\n]*SharedFunctionInfoPrint\(os\);)\n',
                     r'\g<indent>os << "\\nStart SharedFunctionInfo\\n";\n'
                     r'\g<indent>\g<call>\n'
