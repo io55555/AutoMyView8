@@ -349,7 +349,7 @@ class SemanticPatcher:
                         f"{indent}if ({map_expr}.instance_type() == ASM_WASM_DATA_TYPE) {{\n"
                         f'{indent}  os << "<ArrayBoilerplateDescription> ";\n'
                         f"{indent}  Cast<ArrayBoilerplateDescription>(*this)\n"
-                        f"{indent}      .constant_elements()\n"
+                        f"{indent}      ->constant_elements()\n"
                         f"{indent}      .HeapObjectShortPrint(os);\n"
                         f"{indent}  return;\n"
                         f"{indent}}}\n\n"
@@ -370,7 +370,7 @@ class SemanticPatcher:
                     r'\g<indent>case FIXED_ARRAY_TYPE:\n'
                     r'\g<body>'
                     r'\g<indent>os << "\\nStart FixedArray\\n";\n'
-                    r'\g<indent>Cast<FixedArray>(*this).FixedArrayPrint(os);\n'
+                    r'\g<indent>Cast<FixedArray>(*this)->FixedArrayPrint(os);\n'
                     r'\g<indent>os << "\\nEnd FixedArray\\n";\n'
                     r'\g<indent>break;\n',
                     "Start FixedArray",
@@ -381,7 +381,7 @@ class SemanticPatcher:
                     r'\g<body>'
                     r'\g<indent>os << "\\nStart ObjectBoilerplateDescription\\n";\n'
                     r'\g<indent>Cast<ObjectBoilerplateDescription>(*this)\n'
-                    r'\g<indent>    .ObjectBoilerplateDescriptionPrint(os);\n'
+                    r'\g<indent>    ->ObjectBoilerplateDescriptionPrint(os);\n'
                     r'\g<indent>os << "\\nEnd ObjectBoilerplateDescription\\n";\n'
                     r'\g<indent>break;\n',
                     "Start ObjectBoilerplateDescription",
@@ -391,7 +391,7 @@ class SemanticPatcher:
                     r'\g<indent>case FIXED_DOUBLE_ARRAY_TYPE:\n'
                     r'\g<body>'
                     r'\g<indent>os << "\\nStart FixedDoubleArray\\n";\n'
-                    r'\g<indent>Cast<FixedDoubleArray>(*this).FixedDoubleArrayPrint(os);\n'
+                    r'\g<indent>Cast<FixedDoubleArray>(*this)->FixedDoubleArrayPrint(os);\n'
                     r'\g<indent>os << "\\nEnd FixedDoubleArray\\n";\n'
                     r'\g<indent>break;\n',
                     "Start FixedDoubleArray",
@@ -400,7 +400,7 @@ class SemanticPatcher:
                     r'(?P<case_indent>\s*)case SHARED_FUNCTION_INFO_TYPE:(?P<body>.*?)(?P<break_indent>\s*)break;\n',
                     r'\g<case_indent>case SHARED_FUNCTION_INFO_TYPE:\g<body>'
                     r'\g<break_indent>os << "\\nStart SharedFunctionInfo\\n";\n'
-                    r'\g<break_indent>Cast<SharedFunctionInfo>(*this).SharedFunctionInfoPrint(os);\n'
+                    r'\g<break_indent>Cast<SharedFunctionInfo>(*this)->SharedFunctionInfoPrint(os);\n'
                     r'\g<break_indent>os << "\\nEnd SharedFunctionInfo\\n";\n'
                     r'\g<break_indent>break;\n',
                     "Start SharedFunctionInfo",
