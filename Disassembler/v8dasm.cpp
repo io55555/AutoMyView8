@@ -23,7 +23,7 @@ ScriptOrigin CreateScriptOrigin(Args&&... args) {
   }
 }
 
-static void loadBytecode(uint8_t* bytecodeBuffer, int length) {
+static bool loadBytecode(uint8_t* bytecodeBuffer, int length) {
   // Load code into code cache.
   ScriptCompiler::CachedData* cached_data =
       new ScriptCompiler::CachedData(bytecodeBuffer, length);
@@ -34,9 +34,30 @@ static void loadBytecode(uint8_t* bytecodeBuffer, int length) {
   ScriptCompiler::Source source(String::NewFromUtf8Literal(isolate, "\"ಠ_ಠ\""),
                                 origin, cached_data);
 
-  // Compile code from code cache to print disassembly.
+  TryCatch try_catch(isolate);
   MaybeLocal<UnboundScript> script = ScriptCompiler::CompileUnboundScript(
       isolate, &source, ScriptCompiler::kConsumeCodeCache);
+
+  if (script.IsEmpty()) {
+    std::cerr << "[v8dasm] CompileUnboundScript returned empty" << std::endl;
+    if (cached_data->rejected) {
+      std::cerr << "[v8dasm] CachedData was rejected" << std::endl;
+    }
+    if (try_catch.HasCaught()) {
+      String::Utf8Value exception(isolate, try_catch.Exception());
+      std::cerr << "[v8dasm] Exception: "
+                << (*exception ? *exception : "<string conversion failed>")
+                << std::endl;
+    }
+    return false;
+  }
+
+  if (cached_data->rejected) {
+    std::cerr << "[v8dasm] CachedData was rejected after compile" << std::endl;
+    return false;
+  }
+
+  return true;
 }
 
 static void readAllBytes(const std::string& file, std::vector<char>& buffer) {
@@ -53,6 +74,11 @@ static void readAllBytes(const std::string& file, std::vector<char>& buffer) {
 }
 
 int main(int argc, char* argv[]) {
+  if (argc < 2) {
+    std::cerr << "Usage: v8dasm <input.jsc>" << std::endl;
+    return 1;
+  }
+
   V8::SetFlagsFromString("--no-lazy --no-flush-bytecode");
 
   V8::InitializeICU();
@@ -72,5 +98,10 @@ int main(int argc, char* argv[]) {
 
   std::vector<char> data;
   readAllBytes(argv[1], data);
-  loadBytecode((uint8_t*)data.data(), data.size());
+  if (data.empty()) {
+    std::cerr << "[v8dasm] Input file is empty or unreadable: " << argv[1] << std::endl;
+    return 1;
+  }
+
+  return loadBytecode(reinterpret_cast<uint8_t*>(data.data()), static_cast<int>(data.size())) ? 0 : 1;
 }

@@ -19,7 +19,8 @@
       "Bash(./v8dasm-13.6.233.17.exe *)",
       "PowerShell(& \"F:\\\\node-v24.11.0-win-x64\\\\AutoView8\\\\v8dasm-13.6.233.17.exe\" \"F:\\\\node-v24.11.0-win-x64\\\\AutoView8\\\\preload.jsc\")",
       "PowerShell(& \"F:\\\\node-v24.11.0-win-x64\\\\AutoView8\\\\v8dasm-13.6.233.17.exe\"; Write-Output \"EXIT=$LASTEXITCODE\")",
-      "WebFetch(domain:fossies.org)"
+      "WebFetch(domain:fossies.org)",
+      "Bash(F:/node-v24.11.0-win-x64/AutoView8/v8dasm-13.6.233.17.exe *)"
     ]
   }
 }
