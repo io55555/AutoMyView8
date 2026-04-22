@@ -264,7 +264,13 @@ class SemanticPatcher:
 
         if not has_bytecode_block:
             source_pattern = r"^\s*PrintSourceCode\(os\);\n"
-            next_body = re.sub(source_pattern, bytecode_block, sfi_body, count=1, flags=re.MULTILINE)
+            next_body = re.sub(
+                source_pattern,
+                lambda _: bytecode_block,
+                sfi_body,
+                count=1,
+                flags=re.MULTILINE,
+            )
             if next_body == sfi_body:
                 fallback_anchors = [
                     '  os << "\\n - script: " << Brief(script());\n',
