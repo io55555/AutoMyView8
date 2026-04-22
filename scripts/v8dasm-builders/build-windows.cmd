@@ -274,6 +274,7 @@ clang++ "%DASM_SOURCE%" ^
     -Iinclude ^
     -Lout.gn\x64.release\obj ^
     -lv8_monolith ^
+    -ladvapi32 ^
     -ldbghelp ^
     -lwinmm ^
     -o "%OUTPUT_PATH%" > "%CLANG_LOG%" 2>&1
