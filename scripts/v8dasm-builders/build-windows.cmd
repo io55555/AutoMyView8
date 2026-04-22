@@ -78,12 +78,19 @@ call :log_line "Clang log: %CLANG_LOG%"
 
 set DEPOT_TOOLS_WIN_TOOLCHAIN=0
 set DEPOT_TOOLS_UPDATE=0
-if not exist "%USERPROFILE%\depot_tools" (
-    call :fail "INIT" "depot_tools not found at %USERPROFILE%\depot_tools"
+set DEPOT_TOOLS_DIR=%USERPROFILE%\depot_tools
+if not exist "%DEPOT_TOOLS_DIR%" (
+    call :log_line "depot_tools not found at %DEPOT_TOOLS_DIR%; downloading fresh copy"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest 'https://storage.googleapis.com/chrome-infra/depot_tools.zip' -OutFile '%USERPROFILE%\depot_tools.zip'"
+    if errorlevel 1 call :fail "INIT" "Failed to download depot_tools.zip"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Path '%USERPROFILE%\depot_tools.zip' -DestinationPath '%DEPOT_TOOLS_DIR%' -Force"
+    if errorlevel 1 call :fail "INIT" "Failed to extract depot_tools.zip"
+    del /q "%USERPROFILE%\depot_tools.zip"
+    if errorlevel 1 call :fail "INIT" "Failed to remove depot_tools.zip"
 )
-set PATH=%USERPROFILE%\depot_tools;%PATH%
+set PATH=%DEPOT_TOOLS_DIR%;%PATH%
 call :log_line "DEPOT_TOOLS_WIN_TOOLCHAIN=%DEPOT_TOOLS_WIN_TOOLCHAIN%"
-call :log_line "Prepended depot_tools to PATH: %USERPROFILE%\depot_tools"
+call :log_line "Prepended depot_tools to PATH: %DEPOT_TOOLS_DIR%"
 
 call :require_tool git
 call :require_tool python
