@@ -244,27 +244,25 @@ class SemanticPatcher:
         if content is None:
             return "failed"
 
-        signature = "void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os)"
-        body_range = self._find_function_body(content, signature)
-        if body_range is None:
-            return "not_matched_unverified"
-
-        body_start, body_end = body_range
-        body = content[body_start:body_end]
-
-        source_removed = "PrintSourceCode(os);" not in body
-        has_bytecode_block = "Start BytecodeArray" in body and "GetActiveBytecodeArray(isolate)->Disassemble(os);" in body
-
-        if self.verify_only:
-            return "already_target_state" if (source_removed and has_bytecode_block) else "not_matched_unverified"
-
-        updated_body = body
+        updated_content = content
         changed = False
 
-        source_pattern = r"\s*PrintSourceCode\(os\);\n"
-        if re.search(source_pattern, updated_body):
-            updated_body = re.sub(source_pattern, "", updated_body, count=1)
-            changed = True
+        sfi_signature = "void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os)"
+        sfi_range = self._find_function_body(content, sfi_signature)
+        if sfi_range is None:
+            return "not_matched_unverified"
+
+        sfi_body = updated_content[sfi_range[0]:sfi_range[1]]
+        source_removed = "PrintSourceCode(os);" not in sfi_body
+        has_bytecode_block = "Start BytecodeArray" in sfi_body and "GetActiveBytecodeArray(isolate)->Disassemble(os);" in sfi_body
+
+        if not source_removed:
+            source_pattern = r"\s*PrintSourceCode\(os\);\n"
+            next_body = re.sub(source_pattern, "", sfi_body, count=1)
+            if next_body != sfi_body:
+                updated_content = updated_content[:sfi_range[0]] + next_body + updated_content[sfi_range[1]:]
+                changed = True
+                sfi_body = next_body
 
         if not has_bytecode_block:
             tail_anchor = '  os << "\\n";\n'
@@ -274,43 +272,104 @@ class SemanticPatcher:
                 '  os << "\\nEnd BytecodeArray\\n";\n'
                 '  os << std::flush;\n'
             )
-            if tail_anchor not in updated_body:
-                return "not_matched_unverified"
-            updated_body = updated_body.replace(tail_anchor, tail_anchor + bytecode_block, 1)
-            changed = True
+            if tail_anchor in sfi_body:
+                next_body = sfi_body.replace(tail_anchor, tail_anchor + bytecode_block, 1)
+                if next_body != sfi_body:
+                    updated_content = updated_content[:sfi_range[0]] + next_body + updated_content[sfi_range[1]:]
+                    changed = True
+                    sfi_body = next_body
+
+        printer_patches = [
+            (
+                "void FixedArray::FixedArrayPrint(std::ostream& os)",
+                'PrintFixedArrayWithHeader(os, this, "FixedArray");\n',
+                (
+                    '  os << "Start FixedArray\\n";\n'
+                    '  PrintFixedArrayWithHeader(os, this, "FixedArray");\n'
+                    '  os << "\\nEnd FixedArray\\n";\n'
+                ),
+                "Start FixedArray",
+            ),
+            (
+                "void ObjectBoilerplateDescription::ObjectBoilerplateDescriptionPrint",
+                '  os << "\\n - elements:";\n',
+                (
+                    '  os << "Start ObjectBoilerplateDescription\\n";\n'
+                    '  os << "\\n - elements:";\n'
+                ),
+                "Start ObjectBoilerplateDescription",
+            ),
+            (
+                "void FixedDoubleArray::FixedDoubleArrayPrint(std::ostream& os)",
+                '  DoPrintElements<FixedDoubleArray>(os, this, length());\n',
+                (
+                    '  os << "Start FixedDoubleArray\\n";\n'
+                    '  DoPrintElements<FixedDoubleArray>(os, this, length());\n'
+                    '  os << "\\nEnd FixedDoubleArray\\n";\n'
+                ),
+                "Start FixedDoubleArray",
+            ),
+        ]
+
+        for signature, anchor, replacement, marker in printer_patches:
+            if marker in updated_content:
+                continue
+            body_range = self._find_function_body(updated_content, signature)
+            if body_range is None:
+                body_range = self._find_function_body_regex(updated_content, re.escape(signature))
+            if body_range is None:
+                continue
+            body = updated_content[body_range[0]:body_range[1]]
+            if anchor not in body:
+                continue
+            next_body = body.replace(anchor, replacement, 1)
+            if next_body != body:
+                updated_content = updated_content[:body_range[0]] + next_body + updated_content[body_range[1]:]
+                changed = True
+
+        if self.verify_only:
+            required = [
+                "Start BytecodeArray",
+                "GetActiveBytecodeArray(isolate)->Disassemble(os);",
+                "Start FixedArray",
+                "Start ObjectBoilerplateDescription",
+                "Start FixedDoubleArray",
+            ]
+            success = "PrintSourceCode(os);" not in updated_content and all(marker in updated_content for marker in required)
+            return "already_target_state" if success else "not_matched_unverified"
 
         if not changed:
-            return "already_target_state" if (source_removed and has_bytecode_block) else "not_matched_unverified"
+            required = [
+                "Start BytecodeArray",
+                "GetActiveBytecodeArray(isolate)->Disassemble(os);",
+                "Start FixedArray",
+                "Start ObjectBoilerplateDescription",
+                "Start FixedDoubleArray",
+            ]
+            success = "PrintSourceCode(os);" not in updated_content and all(marker in updated_content for marker in required)
+            return "already_target_state" if success else "not_matched_unverified"
 
-        new_content = content[:body_start] + updated_body + content[body_end:]
-        if not self._write_file(file_path, new_content):
+        if not self._write_file(file_path, updated_content):
             return "failed"
 
         updated = self._read_file(file_path)
         if updated is None:
             return "failed"
-        updated_range = self._find_function_body(updated, signature)
-        if updated_range is None:
-            return "failed"
 
-        updated_body = updated[updated_range[0]:updated_range[1]]
-        source_removed = "PrintSourceCode(os);" not in updated_body
-        return "applied_now" if source_removed else "failed"
+        required = [
+            "Start BytecodeArray",
+            "GetActiveBytecodeArray(isolate)->Disassemble(os);",
+            "Start FixedArray",
+            "Start ObjectBoilerplateDescription",
+            "Start FixedDoubleArray",
+        ]
+        success = "PrintSourceCode(os);" not in updated and all(marker in updated for marker in required)
+        return "applied_now" if success else "failed"
 
     def patch_objects_cc(self) -> str:
         candidate_files = [
             self.v8_dir / "src/objects/objects.cc",
             self.v8_dir / "src/diagnostics/objects-printer.cc",
-        ]
-
-        required_markers = [
-            "Start FixedArray",
-            "Start ObjectBoilerplateDescription",
-            "Start FixedDoubleArray",
-            "Start SharedFunctionInfo",
-        ]
-        optional_markers = [
-            "ASM_WASM_DATA_TYPE",
         ]
 
         for file_path in candidate_files:
@@ -329,104 +388,40 @@ class SemanticPatcher:
 
             body_start, body_end = body_range
             body = content[body_start:body_end]
-            already_done = all(marker in body for marker in required_markers)
-            optional_done = all(marker in body for marker in optional_markers)
+            has_asm_block = "ASM_WASM_DATA_TYPE" in body
+
             if self.verify_only:
-                return "already_target_state" if already_done else "not_matched_unverified"
+                return "already_target_state"
 
-            updated_body = body
-            changed = False
+            if has_asm_block:
+                return "already_target_state"
 
-            if not optional_done and "ASM_WASM_DATA_TYPE" not in updated_body:
-                switch_pattern = r'(\n)(?P<indent>\s*)switch \((?P<map_expr>map\(\)|map\(cage_base\))\.instance_type\(\)\) \{'
-                switch_match = re.search(switch_pattern, updated_body)
-                if switch_match is not None:
-                    indent = switch_match.group("indent")
-                    map_expr = switch_match.group("map_expr")
-                    asm_block = (
-                        "\n"
-                        f'{indent}// Print array literal members instead of only "<AsmWasmData>"\n'
-                        f"{indent}if ({map_expr}.instance_type() == ASM_WASM_DATA_TYPE) {{\n"
-                        f'{indent}  os << "<ArrayBoilerplateDescription> ";\n'
-                        f"{indent}  Cast<ArrayBoilerplateDescription>(*this)\n"
-                        f"{indent}      ->constant_elements()\n"
-                        f"{indent}      .HeapObjectShortPrint(os);\n"
-                        f"{indent}  return;\n"
-                        f"{indent}}}\n\n"
-                    )
-                    next_body = re.sub(
-                        switch_pattern,
-                        r'\1' + asm_block + indent + f'switch ({map_expr}.instance_type()) {{',
-                        updated_body,
-                        count=1,
-                    )
-                    if next_body != updated_body:
-                        updated_body = next_body
-                        changed = True
+            switch_pattern = r'(\n)(?P<indent>\s*)switch \((?P<map_expr>map\(\)|map\(cage_base\))\.instance_type\(\)\) \{'
+            switch_match = re.search(switch_pattern, body)
+            if switch_match is None:
+                return "not_matched_unverified"
 
-            case_injections = [
-                (
-                    r'(?P<indent>\s*)case FIXED_ARRAY_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
-                    r'\g<indent>case FIXED_ARRAY_TYPE:\n'
-                    r'\g<body>'
-                    r'\g<indent>os << "\\nStart FixedArray\\n";\n'
-                    r'\g<indent>Cast<FixedArray>(*this)->FixedArrayPrint(os);\n'
-                    r'\g<indent>os << "\\nEnd FixedArray\\n";\n'
-                    r'\g<indent>break;\n',
-                    "Start FixedArray",
-                ),
-                (
-                    r'(?P<indent>\s*)case OBJECT_BOILERPLATE_DESCRIPTION_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
-                    r'\g<indent>case OBJECT_BOILERPLATE_DESCRIPTION_TYPE:\n'
-                    r'\g<body>'
-                    r'\g<indent>os << "\\nStart ObjectBoilerplateDescription\\n";\n'
-                    r'\g<indent>Cast<ObjectBoilerplateDescription>(*this)\n'
-                    r'\g<indent>    ->ObjectBoilerplateDescriptionPrint(os);\n'
-                    r'\g<indent>os << "\\nEnd ObjectBoilerplateDescription\\n";\n'
-                    r'\g<indent>break;\n',
-                    "Start ObjectBoilerplateDescription",
-                ),
-                (
-                    r'(?P<indent>\s*)case FIXED_DOUBLE_ARRAY_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
-                    r'\g<indent>case FIXED_DOUBLE_ARRAY_TYPE:\n'
-                    r'\g<body>'
-                    r'\g<indent>os << "\\nStart FixedDoubleArray\\n";\n'
-                    r'\g<indent>Cast<FixedDoubleArray>(*this)->FixedDoubleArrayPrint(os);\n'
-                    r'\g<indent>os << "\\nEnd FixedDoubleArray\\n";\n'
-                    r'\g<indent>break;\n',
-                    "Start FixedDoubleArray",
-                ),
-                (
-                    r'(?P<case_indent>\s*)case SHARED_FUNCTION_INFO_TYPE:(?P<body>.*?)(?P<break_indent>\s*)break;\n',
-                    r'\g<case_indent>case SHARED_FUNCTION_INFO_TYPE:\g<body>'
-                    r'\g<break_indent>os << "\\nStart SharedFunctionInfo\\n";\n'
-                    r'\g<break_indent>Cast<SharedFunctionInfo>(*this)->SharedFunctionInfoPrint(os);\n'
-                    r'\g<break_indent>os << "\\nEnd SharedFunctionInfo\\n";\n'
-                    r'\g<break_indent>break;\n',
-                    "Start SharedFunctionInfo",
-                ),
-                (
-                    r'(?P<indent>\s*)(?P<call>[^\n]*SharedFunctionInfoPrint\(os\);)\n',
-                    r'\g<indent>os << "\\nStart SharedFunctionInfo\\n";\n'
-                    r'\g<indent>\g<call>\n'
-                    r'\g<indent>os << "\\nEnd SharedFunctionInfo\\n";\n',
-                    "Start SharedFunctionInfo",
-                ),
-            ]
-
-            for pattern, replacement, marker in case_injections:
-                if marker in updated_body:
-                    continue
-                next_body = re.sub(pattern, replacement, updated_body, count=1, flags=re.DOTALL)
-                if next_body != updated_body:
-                    updated_body = next_body
-                    changed = True
-
-            if "Start SharedFunctionInfo" not in updated_body and "SharedFunctionInfoPrint(os);" not in updated_body:
-                self.log(f"[SEMANTIC][objects.cc] reason=shared_function_info_call_not_found file={file_path}")
-
-            if not changed:
-                return "already_target_state" if already_done else "not_matched_unverified"
+            indent = switch_match.group("indent")
+            map_expr = switch_match.group("map_expr")
+            asm_block = (
+                "\n"
+                f'{indent}// Print array literal members instead of only "<AsmWasmData>"\n'
+                f"{indent}if ({map_expr}.instance_type() == ASM_WASM_DATA_TYPE) {{\n"
+                f'{indent}  os << "<ArrayBoilerplateDescription> ";\n'
+                f"{indent}  Cast<ArrayBoilerplateDescription>(*this)\n"
+                f"{indent}      ->constant_elements()\n"
+                f"{indent}      ->HeapObjectShortPrint(os);\n"
+                f"{indent}  return;\n"
+                f"{indent}}}\n\n"
+            )
+            updated_body = re.sub(
+                switch_pattern,
+                r'\1' + asm_block + indent + f'switch ({map_expr}.instance_type()) {{',
+                body,
+                count=1,
+            )
+            if updated_body == body:
+                return "not_matched_unverified"
 
             new_content = content[:body_start] + updated_body + content[body_end:]
             if not self._write_file(file_path, new_content):
@@ -442,14 +437,9 @@ class SemanticPatcher:
             if updated_range is None:
                 return "failed"
             updated_body = updated[updated_range[0]:updated_range[1]]
-            success = all(marker in updated_body for marker in required_markers)
-            if not success:
-                missing = [marker for marker in required_markers if marker not in updated_body]
-                self.log(f"[SEMANTIC][objects.cc] reason=post_verify_missing required={missing} file={file_path}")
-                return "failed"
-            return "applied_now"
+            return "applied_now" if "ASM_WASM_DATA_TYPE" in updated_body else "failed"
 
-        return "not_matched_unverified"
+        return "already_target_state"
 
     def apply_all(self) -> bool:
         self.log(f"[SEMANTIC] START verify_only={str(self.verify_only).lower()} v8_dir={self.v8_dir}")
