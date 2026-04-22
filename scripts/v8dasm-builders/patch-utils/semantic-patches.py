@@ -298,11 +298,13 @@ class SemanticPatcher:
         ]
 
         required_markers = [
-            "ASM_WASM_DATA_TYPE",
             "Start FixedArray",
             "Start ObjectBoilerplateDescription",
             "Start FixedDoubleArray",
             "Start SharedFunctionInfo",
+        ]
+        optional_markers = [
+            "ASM_WASM_DATA_TYPE",
         ]
 
         for file_path in candidate_files:
@@ -322,13 +324,14 @@ class SemanticPatcher:
             body_start, body_end = body_range
             body = content[body_start:body_end]
             already_done = all(marker in body for marker in required_markers)
+            optional_done = all(marker in body for marker in optional_markers)
             if self.verify_only:
                 return "already_target_state" if already_done else "not_matched_unverified"
 
             updated_body = body
             changed = False
 
-            if "ASM_WASM_DATA_TYPE" not in updated_body:
+            if not optional_done and "ASM_WASM_DATA_TYPE" not in updated_body:
                 switch_pattern = r'(\n)(?P<indent>\s*)switch \((?P<map_expr>map\(\)|map\(cage_base\))\.instance_type\(\)\) \{'
                 switch_match = re.search(switch_pattern, updated_body)
                 if switch_match is not None:
@@ -426,7 +429,11 @@ class SemanticPatcher:
                 return "failed"
             updated_body = updated[updated_range[0]:updated_range[1]]
             success = all(marker in updated_body for marker in required_markers)
-            return "applied_now" if success else "failed"
+            if not success:
+                missing = [marker for marker in required_markers if marker not in updated_body]
+                self.log(f"[SEMANTIC][objects.cc] reason=post_verify_missing required={missing} file={file_path}")
+                return "failed"
+            return "applied_now"
 
         return "not_matched_unverified"
 
