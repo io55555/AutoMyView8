@@ -68,6 +68,26 @@ class SemanticPatcher:
                     return brace_start + 1, index
         return None
 
+    def _find_function_body_regex(self, content: str, signature_pattern: str, flags: int = 0) -> tuple[int, int] | None:
+        match = re.search(signature_pattern, content, flags)
+        if match is None:
+            return None
+
+        brace_start = content.find("{", match.start())
+        if brace_start == -1:
+            return None
+
+        depth = 0
+        for index in range(brace_start, len(content)):
+            char = content[index]
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    return brace_start + 1, index
+        return None
+
     def _apply_or_verify_block(
         self,
         name: str,
@@ -132,6 +152,11 @@ class SemanticPatcher:
         deserialize_signature = "MaybeHandle<SharedFunctionInfo> CodeSerializer::Deserialize("
         deserialize_range = self._find_function_body(content, deserialize_signature)
         if deserialize_range is None:
+            deserialize_range = self._find_function_body_regex(
+                content,
+                r"MaybeHandle\s*<\s*SharedFunctionInfo\s*>\s+CodeSerializer::Deserialize\s*\(",
+            )
+        if deserialize_range is None:
             return "not_matched_unverified"
 
         deserialize_body = content[deserialize_range[0]:deserialize_range[1]]
@@ -145,7 +170,6 @@ class SemanticPatcher:
         changed = False
 
         if not has_print_block:
-            print_anchor = "  BaselineBatchCompileIfSparkplugCompiled(isolate,"
             print_block = (
                 "\n"
                 '  std::cout << "\\nStart SharedFunctionInfo\\n";\n'
@@ -153,9 +177,11 @@ class SemanticPatcher:
                 '  std::cout << "\\nEnd SharedFunctionInfo\\n";\n'
                 '  std::cout << std::flush;\n'
             )
-            if print_anchor not in updated_content:
+            anchor_pattern = r"(^\s*BaselineBatchCompileIfSparkplugCompiled\s*\(\s*isolate\s*,)"
+            next_content = re.sub(anchor_pattern, print_block + r"\1", updated_content, count=1, flags=re.MULTILINE)
+            if next_content == updated_content:
                 return "not_matched_unverified"
-            updated_content = updated_content.replace(print_anchor, print_block + print_anchor, 1)
+            updated_content = next_content
             changed = True
 
         sanity_pattern = (
@@ -264,8 +290,13 @@ class SemanticPatcher:
         signature = "void HeapObject::HeapObjectShortPrint(std::ostream& os)"
         body_range = self._find_function_body(content, signature)
         if body_range is None:
-            self.log(f"[SEMANTIC][objects.cc] reason=signature_not_found_treat_as_obsolete signature={signature}")
-            return "already_target_state"
+            body_range = self._find_function_body_regex(
+                content,
+                r"void\s+HeapObject::HeapObjectShortPrint\s*\(\s*std::ostream\s*&\s*os\s*\)",
+            )
+        if body_range is None:
+            self.log(f"[SEMANTIC][objects.cc] reason=signature_not_found signature={signature}")
+            return "not_matched_unverified"
 
         body_start, body_end = body_range
         body = content[body_start:body_end]
