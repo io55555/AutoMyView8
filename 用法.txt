@@ -1,0 +1,15 @@
+#python view8.py input.jsc output.js --path ./v8dasm
+
+python -m pip install parse
+python view8.py preload.jsc preload.jsc.js --path ./v8dasm-13.6.233.17.exe
+python view8.py preload.jsc preload.jsc.js --path "./v8dasm-13.6.233.17.exe"
+
+
+
+
+
+
+
+
+
+

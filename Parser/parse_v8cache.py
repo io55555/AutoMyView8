@@ -67,6 +67,16 @@ def parse_v8cache_file(file_name, out_name, view8_dir, binary_path):
 
 def parse_disassembled_file(out_name):
     print(f"[parse_v8cache] Parsing disassembled file={os.path.abspath(out_name)}")
+    if not os.path.isfile(out_name):
+        raise FileNotFoundError(f"Disassembly output file does not exist: {out_name}")
+
+    file_size = os.path.getsize(out_name)
+    if file_size == 0:
+        raise ValueError(
+            f"Disassembly output is empty: {out_name}. "
+            "The disassembler binary ran but did not emit View8-compatible text output."
+        )
+
     all_func = parse_file(out_name)
     print(f"[parse_v8cache] Parsing completed successfully")
     return all_func

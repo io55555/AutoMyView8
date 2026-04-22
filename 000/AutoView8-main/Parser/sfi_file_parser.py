@@ -178,18 +178,12 @@ def parse_shared_function_info(lines, name, declarer=None):
 
 
 def parse_file(file="test.txt"):
-    all_functions.clear()
     lines = get_next_line(file)
+    while next(lines) != "Start SharedFunctionInfo":
+        pass
 
-    for line in lines:
-        if line is None:
-            raise ValueError(
-                f"Could not find 'Start SharedFunctionInfo' in disassembly output: {file}. "
-                "The disassembler binary likely did not emit the patched View8 format."
-            )
-        if line == "Start SharedFunctionInfo":
-            parse_shared_function_info(lines, "start")
-            return all_functions
+    parse_shared_function_info(lines, "start")
+    return all_functions
 
 
 if __name__ == '__main__':

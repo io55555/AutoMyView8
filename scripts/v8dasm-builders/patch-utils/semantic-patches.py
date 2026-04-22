@@ -112,28 +112,89 @@ class SemanticPatcher:
         return self._apply_or_verify_block("string.cc", file_path, pattern, "\n", target_marker)
 
     def patch_deserializer_cc(self) -> str:
-        return "already_target_state"
+        file_path = self.v8_dir / "src/snapshot/deserializer.cc"
+        target_marker = "CHECK_EQ(magic_number_, SerializedData::kMagicNumber);"
+        pattern = r"\s*CHECK_EQ\(magic_number_,\s*SerializedData::kMagicNumber\);\n"
+        return self._apply_or_verify_block(
+            "deserializer.cc",
+            file_path,
+            pattern,
+            "\n",
+            target_marker,
+        )
 
     def patch_code_serializer_cc(self) -> str:
         file_path = self.v8_dir / "src/snapshot/code-serializer.cc"
-        target_marker = "return SerializedCodeSanityCheckResult::kSuccess;"
-        pattern = (
+        content = self._read_file(file_path)
+        if content is None:
+            return "failed"
+
+        deserialize_signature = "MaybeHandle<SharedFunctionInfo> CodeSerializer::Deserialize("
+        deserialize_range = self._find_function_body(content, deserialize_signature)
+        if deserialize_range is None:
+            return "not_matched_unverified"
+
+        deserialize_body = content[deserialize_range[0]:deserialize_range[1]]
+        has_print_block = "Start SharedFunctionInfo" in deserialize_body
+        has_sanity_override = "return SerializedCodeSanityCheckResult::kSuccess;" in content
+
+        if self.verify_only:
+            return "already_target_state" if (has_print_block and has_sanity_override) else "not_matched_unverified"
+
+        updated_content = content
+        changed = False
+
+        if not has_print_block:
+            print_anchor = "  BaselineBatchCompileIfSparkplugCompiled(isolate,"
+            print_block = (
+                "\n"
+                '  std::cout << "\\nStart SharedFunctionInfo\\n";\n'
+                '  result->SharedFunctionInfoPrint(std::cout);\n'
+                '  std::cout << "\\nEnd SharedFunctionInfo\\n";\n'
+                '  std::cout << std::flush;\n'
+            )
+            if print_anchor not in updated_content:
+                return "not_matched_unverified"
+            updated_content = updated_content.replace(print_anchor, print_block + print_anchor, 1)
+            changed = True
+
+        sanity_pattern = (
             r"(SerializedCodeSanityCheckResult\s+SerializedCodeData::SanityCheck\s*"
             r"\([^)]*\)\s*const\s*\{)\s*"
             r"SerializedCodeSanityCheckResult\s+result\s*=\s*SanityCheckWithoutSource\s*\(\s*\)\s*;\s*"
             r"if\s*\([^)]*\)\s*return\s+result\s*;\s*"
             r"return\s+SanityCheckJustSource\s*\([^)]*\)\s*;"
         )
-        replacement = r"\1\n  return SerializedCodeSanityCheckResult::kSuccess;"
-        return self._apply_or_verify_block(
-            "code-serializer.cc",
-            file_path,
-            pattern,
-            replacement,
-            target_marker,
-            flags=re.DOTALL,
-            target_should_be_absent=False,
+        if not has_sanity_override:
+            next_content = re.sub(
+                sanity_pattern,
+                r"\1\n  return SerializedCodeSanityCheckResult::kSuccess;",
+                updated_content,
+                count=1,
+                flags=re.DOTALL,
+            )
+            if next_content == updated_content:
+                return "not_matched_unverified"
+            updated_content = next_content
+            changed = True
+
+        if not changed:
+            return "already_target_state"
+        if not self._write_file(file_path, updated_content):
+            return "failed"
+
+        updated = self._read_file(file_path)
+        if updated is None:
+            return "failed"
+        updated_range = self._find_function_body(updated, deserialize_signature)
+        if updated_range is None:
+            return "failed"
+        updated_body = updated[updated_range[0]:updated_range[1]]
+        success = (
+            "Start SharedFunctionInfo" in updated_body
+            and "return SerializedCodeSanityCheckResult::kSuccess;" in updated
         )
+        return "applied_now" if success else "failed"
 
     def patch_objects_printer_cc(self) -> str:
         file_path = self.v8_dir / "src/diagnostics/objects-printer.cc"
@@ -150,9 +211,10 @@ class SemanticPatcher:
         body = content[body_start:body_end]
 
         source_removed = "PrintSourceCode(os);" not in body
+        has_bytecode_block = "Start BytecodeArray" in body and "GetActiveBytecodeArray().Disassemble(os);" in body
 
         if self.verify_only:
-            return "already_target_state" if source_removed else "not_matched_unverified"
+            return "already_target_state" if (source_removed and has_bytecode_block) else "not_matched_unverified"
 
         updated_body = body
         changed = False
@@ -162,8 +224,21 @@ class SemanticPatcher:
             updated_body = re.sub(source_pattern, "", updated_body, count=1)
             changed = True
 
+        if not has_bytecode_block:
+            tail_anchor = '  os << "\\n";\n'
+            bytecode_block = (
+                '  os << "\\nStart BytecodeArray\\n";\n'
+                '  this->GetActiveBytecodeArray().Disassemble(os);\n'
+                '  os << "\\nEnd BytecodeArray\\n";\n'
+                '  os << std::flush;\n'
+            )
+            if tail_anchor not in updated_body:
+                return "not_matched_unverified"
+            updated_body = updated_body.replace(tail_anchor, tail_anchor + bytecode_block, 1)
+            changed = True
+
         if not changed:
-            return "already_target_state" if source_removed else "not_matched_unverified"
+            return "already_target_state" if (source_removed and has_bytecode_block) else "not_matched_unverified"
 
         new_content = content[:body_start] + updated_body + content[body_end:]
         if not self._write_file(file_path, new_content):
