@@ -182,7 +182,13 @@ class SemanticPatcher:
             ]
             next_content = updated_content
             for anchor_pattern in anchor_patterns:
-                next_content = re.sub(anchor_pattern, print_block + r"\1", updated_content, count=1, flags=re.MULTILINE)
+                next_content = re.sub(
+                    anchor_pattern,
+                    lambda match: print_block + match.group(1),
+                    updated_content,
+                    count=1,
+                    flags=re.MULTILINE,
+                )
                 if next_content != updated_content:
                     break
             if next_content == updated_content:
@@ -247,7 +253,7 @@ class SemanticPatcher:
         body = content[body_start:body_end]
 
         source_removed = "PrintSourceCode(os);" not in body
-        has_bytecode_block = "Start BytecodeArray" in body and "GetActiveBytecodeArray().Disassemble(os);" in body
+        has_bytecode_block = "Start BytecodeArray" in body and "GetActiveBytecodeArray(isolate)->Disassemble(os);" in body
 
         if self.verify_only:
             return "already_target_state" if (source_removed and has_bytecode_block) else "not_matched_unverified"
@@ -264,7 +270,7 @@ class SemanticPatcher:
             tail_anchor = '  os << "\\n";\n'
             bytecode_block = (
                 '  os << "\\nStart BytecodeArray\\n";\n'
-                '  this->GetActiveBytecodeArray().Disassemble(os);\n'
+                '  GetActiveBytecodeArray(isolate)->Disassemble(os);\n'
                 '  os << "\\nEnd BytecodeArray\\n";\n'
                 '  os << std::flush;\n'
             )
@@ -342,7 +348,7 @@ class SemanticPatcher:
                         f'{indent}// Print array literal members instead of only "<AsmWasmData>"\n'
                         f"{indent}if ({map_expr}.instance_type() == ASM_WASM_DATA_TYPE) {{\n"
                         f'{indent}  os << "<ArrayBoilerplateDescription> ";\n'
-                        f"{indent}  ArrayBoilerplateDescription::cast(*this)\n"
+                        f"{indent}  Cast<ArrayBoilerplateDescription>(*this)\n"
                         f"{indent}      .constant_elements()\n"
                         f"{indent}      .HeapObjectShortPrint(os);\n"
                         f"{indent}  return;\n"
@@ -364,7 +370,7 @@ class SemanticPatcher:
                     r'\g<indent>case FIXED_ARRAY_TYPE:\n'
                     r'\g<body>'
                     r'\g<indent>os << "\\nStart FixedArray\\n";\n'
-                    r'\g<indent>FixedArray::cast(*this).FixedArrayPrint(os);\n'
+                    r'\g<indent>Cast<FixedArray>(*this).FixedArrayPrint(os);\n'
                     r'\g<indent>os << "\\nEnd FixedArray\\n";\n'
                     r'\g<indent>break;\n',
                     "Start FixedArray",
@@ -374,7 +380,7 @@ class SemanticPatcher:
                     r'\g<indent>case OBJECT_BOILERPLATE_DESCRIPTION_TYPE:\n'
                     r'\g<body>'
                     r'\g<indent>os << "\\nStart ObjectBoilerplateDescription\\n";\n'
-                    r'\g<indent>ObjectBoilerplateDescription::cast(*this)\n'
+                    r'\g<indent>Cast<ObjectBoilerplateDescription>(*this)\n'
                     r'\g<indent>    .ObjectBoilerplateDescriptionPrint(os);\n'
                     r'\g<indent>os << "\\nEnd ObjectBoilerplateDescription\\n";\n'
                     r'\g<indent>break;\n',
@@ -385,7 +391,7 @@ class SemanticPatcher:
                     r'\g<indent>case FIXED_DOUBLE_ARRAY_TYPE:\n'
                     r'\g<body>'
                     r'\g<indent>os << "\\nStart FixedDoubleArray\\n";\n'
-                    r'\g<indent>FixedDoubleArray::cast(*this).FixedDoubleArrayPrint(os);\n'
+                    r'\g<indent>Cast<FixedDoubleArray>(*this).FixedDoubleArrayPrint(os);\n'
                     r'\g<indent>os << "\\nEnd FixedDoubleArray\\n";\n'
                     r'\g<indent>break;\n',
                     "Start FixedDoubleArray",
@@ -394,7 +400,7 @@ class SemanticPatcher:
                     r'(?P<case_indent>\s*)case SHARED_FUNCTION_INFO_TYPE:(?P<body>.*?)(?P<break_indent>\s*)break;\n',
                     r'\g<case_indent>case SHARED_FUNCTION_INFO_TYPE:\g<body>'
                     r'\g<break_indent>os << "\\nStart SharedFunctionInfo\\n";\n'
-                    r'\g<break_indent>shared.SharedFunctionInfoPrint(os);\n'
+                    r'\g<break_indent>Cast<SharedFunctionInfo>(*this).SharedFunctionInfoPrint(os);\n'
                     r'\g<break_indent>os << "\\nEnd SharedFunctionInfo\\n";\n'
                     r'\g<break_indent>break;\n',
                     "Start SharedFunctionInfo",
