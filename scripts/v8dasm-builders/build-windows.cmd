@@ -112,7 +112,7 @@ if exist "%V8_PARENT_DIR%\.gclient" (
 
 if exist "%V8_DIR%" (
     call :log_line "Existing V8 checkout detected"
-    call :append_command_output "%STATE_LOG%" "dir /a \"%V8_PARENT_DIR%\""
+    call :append_command_output "%STATE_LOG%" "dir /a %V8_PARENT_DIR%"
     if not exist "%V8_DIR%\.git" (
         call :log_line "Existing V8 dir is missing .git; deleting isolated build root"
         rmdir /s /q "%V8_PARENT_DIR%"
