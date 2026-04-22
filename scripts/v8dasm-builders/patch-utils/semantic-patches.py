@@ -149,14 +149,12 @@ class SemanticPatcher:
         if content is None:
             return "failed"
 
-        deserialize_signature = "MaybeHandle<SharedFunctionInfo> CodeSerializer::Deserialize("
-        deserialize_range = self._find_function_body(content, deserialize_signature)
+        deserialize_range = self._find_function_body_regex(
+            content,
+            r"CodeSerializer::Deserialize\s*\(",
+        )
         if deserialize_range is None:
-            deserialize_range = self._find_function_body_regex(
-                content,
-                r"MaybeHandle\s*<\s*SharedFunctionInfo\s*>\s+CodeSerializer::Deserialize\s*\(",
-            )
-        if deserialize_range is None:
+            self.log("[SEMANTIC][code-serializer.cc] reason=deserialize_signature_not_found")
             return "not_matched_unverified"
 
         deserialize_body = content[deserialize_range[0]:deserialize_range[1]]
@@ -177,9 +175,18 @@ class SemanticPatcher:
                 '  std::cout << "\\nEnd SharedFunctionInfo\\n";\n'
                 '  std::cout << std::flush;\n'
             )
-            anchor_pattern = r"(^\s*BaselineBatchCompileIfSparkplugCompiled\s*\(\s*isolate\s*,)"
-            next_content = re.sub(anchor_pattern, print_block + r"\1", updated_content, count=1, flags=re.MULTILINE)
+            anchor_patterns = [
+                r"(^\s*BaselineBatchCompileIfSparkplugCompiled\s*\(\s*isolate\s*,)",
+                r"(^\s*script->set_deserialized\s*\(\s*true\s*\);\s*$)",
+                r"(^\s*FinalizeDeserialization\s*\(.*$)",
+            ]
+            next_content = updated_content
+            for anchor_pattern in anchor_patterns:
+                next_content = re.sub(anchor_pattern, print_block + r"\1", updated_content, count=1, flags=re.MULTILINE)
+                if next_content != updated_content:
+                    break
             if next_content == updated_content:
+                self.log("[SEMANTIC][code-serializer.cc] reason=print_anchor_not_found")
                 return "not_matched_unverified"
             updated_content = next_content
             changed = True
@@ -212,7 +219,10 @@ class SemanticPatcher:
         updated = self._read_file(file_path)
         if updated is None:
             return "failed"
-        updated_range = self._find_function_body(updated, deserialize_signature)
+        updated_range = self._find_function_body_regex(
+            updated,
+            r"CodeSerializer::Deserialize\s*\(",
+        )
         if updated_range is None:
             return "failed"
         updated_body = updated[updated_range[0]:updated_range[1]]
@@ -282,34 +292,10 @@ class SemanticPatcher:
         return "applied_now" if source_removed else "failed"
 
     def patch_objects_cc(self) -> str:
-        file_path = self.v8_dir / "src/objects/objects.cc"
-        content = self._read_file(file_path)
-        if content is None:
-            return "failed"
-
-        signature = "void HeapObject::HeapObjectShortPrint(std::ostream& os)"
-        body_range = self._find_function_body(content, signature)
-        if body_range is None:
-            body_range = self._find_function_body_regex(
-                content,
-                r"void\s+HeapObject::HeapObjectShortPrint\s*\(\s*std::ostream\s*&\s*os\s*\)",
-            )
-        if body_range is None:
-            self.log(f"[SEMANTIC][objects.cc] reason=signature_not_found signature={signature}")
-            return "not_matched_unverified"
-
-        body_start, body_end = body_range
-        body = content[body_start:body_end]
-
-        def log_objects_cc_context(reason: str, text: str):
-            switch_index = text.find("switch (")
-            excerpt_start = max(0, switch_index - 200) if switch_index != -1 else 0
-            excerpt_end = min(len(text), switch_index + 2200) if switch_index != -1 else min(len(text), 2200)
-            excerpt = text[excerpt_start:excerpt_end]
-            excerpt = excerpt.replace("\r\n", "\n")
-            self.log(f"[SEMANTIC][objects.cc] reason={reason}")
-            for line in excerpt.split("\n"):
-                self.log(f"[SEMANTIC][objects.cc] {line}")
+        candidate_files = [
+            self.v8_dir / "src/objects/objects.cc",
+            self.v8_dir / "src/diagnostics/objects-printer.cc",
+        ]
 
         required_markers = [
             "ASM_WASM_DATA_TYPE",
@@ -318,122 +304,131 @@ class SemanticPatcher:
             "Start FixedDoubleArray",
             "Start SharedFunctionInfo",
         ]
-        already_done = all(marker in body for marker in required_markers)
-        if self.verify_only:
-            if already_done:
-                return "already_target_state"
-            log_objects_cc_context("verify_only_not_matched", body)
-            return "not_matched_unverified"
 
-        updated_body = body
-        changed = False
-
-        if "ASM_WASM_DATA_TYPE" not in updated_body:
-            switch_pattern = r'(\n)(?P<indent>\s*)switch \((?P<map_expr>map\(\)|map\(cage_base\))\.instance_type\(\)\) \{'
-            switch_match = re.search(switch_pattern, updated_body)
-            if switch_match is None:
-                log_objects_cc_context("switch_pattern_not_found", updated_body)
-                return "not_matched_unverified"
-
-            indent = switch_match.group("indent")
-            map_expr = switch_match.group("map_expr")
-            asm_block = (
-                "\n"
-                f'{indent}// Print array literal members instead of only "<AsmWasmData>"\n'
-                f"{indent}if ({map_expr}.instance_type() == ASM_WASM_DATA_TYPE) {{\n"
-                f'{indent}  os << "<ArrayBoilerplateDescription> ";\n'
-                f"{indent}  ArrayBoilerplateDescription::cast(*this)\n"
-                f"{indent}      .constant_elements()\n"
-                f"{indent}      .HeapObjectShortPrint(os);\n"
-                f"{indent}  return;\n"
-                f"{indent}}}\n\n"
-            )
-            next_body = re.sub(
-                switch_pattern,
-                r'\1' + asm_block + indent + f'switch ({map_expr}.instance_type()) {{',
-                updated_body,
-                count=1,
-            )
-            if next_body == updated_body:
-                log_objects_cc_context("switch_injection_failed", updated_body)
-                return "not_matched_unverified"
-            updated_body = next_body
-            changed = True
-
-        case_injections = [
-            (
-                "FIXED_ARRAY_TYPE",
-                r'(?P<indent>\s*)case FIXED_ARRAY_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
-                r'\g<indent>case FIXED_ARRAY_TYPE:\n'
-                r'\g<body>'
-                r'\g<indent>os << "\\nStart FixedArray\\n";\n'
-                r'\g<indent>FixedArray::cast(*this).FixedArrayPrint(os);\n'
-                r'\g<indent>os << "\\nEnd FixedArray\\n";\n'
-                r'\g<indent>break;\n',
-                "Start FixedArray",
-            ),
-            (
-                "OBJECT_BOILERPLATE_DESCRIPTION_TYPE",
-                r'(?P<indent>\s*)case OBJECT_BOILERPLATE_DESCRIPTION_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
-                r'\g<indent>case OBJECT_BOILERPLATE_DESCRIPTION_TYPE:\n'
-                r'\g<body>'
-                r'\g<indent>os << "\\nStart ObjectBoilerplateDescription\\n";\n'
-                r'\g<indent>ObjectBoilerplateDescription::cast(*this)\n'
-                r'\g<indent>    .ObjectBoilerplateDescriptionPrint(os);\n'
-                r'\g<indent>os << "\\nEnd ObjectBoilerplateDescription\\n";\n'
-                r'\g<indent>break;\n',
-                "Start ObjectBoilerplateDescription",
-            ),
-            (
-                "FIXED_DOUBLE_ARRAY_TYPE",
-                r'(?P<indent>\s*)case FIXED_DOUBLE_ARRAY_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
-                r'\g<indent>case FIXED_DOUBLE_ARRAY_TYPE:\n'
-                r'\g<body>'
-                r'\g<indent>os << "\\nStart FixedDoubleArray\\n";\n'
-                r'\g<indent>FixedDoubleArray::cast(*this).FixedDoubleArrayPrint(os);\n'
-                r'\g<indent>os << "\\nEnd FixedDoubleArray\\n";\n'
-                r'\g<indent>break;\n',
-                "Start FixedDoubleArray",
-            ),
-            (
-                "SHARED_FUNCTION_INFO_TYPE",
-                r'(?P<indent>\s*)case SHARED_FUNCTION_INFO_TYPE:\s*\{\n(?P<body>.*?)(?P=indent)\}\n(?P=indent)break;\n',
-                r'\g<indent>case SHARED_FUNCTION_INFO_TYPE: {\n'
-                r'\g<body>'
-                r'\g<indent>  os << "\\nStart SharedFunctionInfo\\n";\n'
-                r'\g<indent>  shared.SharedFunctionInfoPrint(os);\n'
-                r'\g<indent>  os << "\\nEnd SharedFunctionInfo\\n";\n'
-                r'\g<indent>  break;\n'
-                r'\g<indent>}\n',
-                "Start SharedFunctionInfo",
-            ),
-        ]
-
-        for case_name, pattern, replacement, marker in case_injections:
-            if marker in updated_body:
+        for file_path in candidate_files:
+            content = self._read_file(file_path)
+            if content is None:
                 continue
-            next_body = re.sub(pattern, replacement, updated_body, count=1, flags=re.DOTALL)
-            if next_body == updated_body:
-                log_objects_cc_context(f"case_injection_failed:{case_name}", updated_body)
-                return "not_matched_unverified"
-            updated_body = next_body
-            changed = True
 
-        new_content = content[:body_start] + updated_body + content[body_end:]
-        if not changed:
-            return "already_target_state" if already_done else "not_matched_unverified"
-        if not self._write_file(file_path, new_content):
-            return "failed"
+            body_range = self._find_function_body(content, "void HeapObject::HeapObjectShortPrint(std::ostream& os)")
+            if body_range is None:
+                body_range = self._find_function_body_regex(
+                    content,
+                    r"void\s+HeapObject::HeapObjectShortPrint\s*\(\s*std::ostream\s*&\s*os\s*\)",
+                )
+            if body_range is None:
+                continue
 
-        updated = self._read_file(file_path)
-        if updated is None:
-            return "failed"
-        updated_range = self._find_function_body(updated, signature)
-        if updated_range is None:
-            return "failed"
-        updated_body = updated[updated_range[0]:updated_range[1]]
-        success = all(marker in updated_body for marker in required_markers)
-        return "applied_now" if success else "failed"
+            body_start, body_end = body_range
+            body = content[body_start:body_end]
+            already_done = all(marker in body for marker in required_markers)
+            if self.verify_only:
+                return "already_target_state" if already_done else "not_matched_unverified"
+
+            updated_body = body
+            changed = False
+
+            if "ASM_WASM_DATA_TYPE" not in updated_body:
+                switch_pattern = r'(\n)(?P<indent>\s*)switch \((?P<map_expr>map\(\)|map\(cage_base\))\.instance_type\(\)\) \{'
+                switch_match = re.search(switch_pattern, updated_body)
+                if switch_match is not None:
+                    indent = switch_match.group("indent")
+                    map_expr = switch_match.group("map_expr")
+                    asm_block = (
+                        "\n"
+                        f'{indent}// Print array literal members instead of only "<AsmWasmData>"\n'
+                        f"{indent}if ({map_expr}.instance_type() == ASM_WASM_DATA_TYPE) {{\n"
+                        f'{indent}  os << "<ArrayBoilerplateDescription> ";\n'
+                        f"{indent}  ArrayBoilerplateDescription::cast(*this)\n"
+                        f"{indent}      .constant_elements()\n"
+                        f"{indent}      .HeapObjectShortPrint(os);\n"
+                        f"{indent}  return;\n"
+                        f"{indent}}}\n\n"
+                    )
+                    next_body = re.sub(
+                        switch_pattern,
+                        r'\1' + asm_block + indent + f'switch ({map_expr}.instance_type()) {{',
+                        updated_body,
+                        count=1,
+                    )
+                    if next_body != updated_body:
+                        updated_body = next_body
+                        changed = True
+
+            case_injections = [
+                (
+                    r'(?P<indent>\s*)case FIXED_ARRAY_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
+                    r'\g<indent>case FIXED_ARRAY_TYPE:\n'
+                    r'\g<body>'
+                    r'\g<indent>os << "\\nStart FixedArray\\n";\n'
+                    r'\g<indent>FixedArray::cast(*this).FixedArrayPrint(os);\n'
+                    r'\g<indent>os << "\\nEnd FixedArray\\n";\n'
+                    r'\g<indent>break;\n',
+                    "Start FixedArray",
+                ),
+                (
+                    r'(?P<indent>\s*)case OBJECT_BOILERPLATE_DESCRIPTION_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
+                    r'\g<indent>case OBJECT_BOILERPLATE_DESCRIPTION_TYPE:\n'
+                    r'\g<body>'
+                    r'\g<indent>os << "\\nStart ObjectBoilerplateDescription\\n";\n'
+                    r'\g<indent>ObjectBoilerplateDescription::cast(*this)\n'
+                    r'\g<indent>    .ObjectBoilerplateDescriptionPrint(os);\n'
+                    r'\g<indent>os << "\\nEnd ObjectBoilerplateDescription\\n";\n'
+                    r'\g<indent>break;\n',
+                    "Start ObjectBoilerplateDescription",
+                ),
+                (
+                    r'(?P<indent>\s*)case FIXED_DOUBLE_ARRAY_TYPE:\n(?P<body>.*?)(?P=indent)break;\n',
+                    r'\g<indent>case FIXED_DOUBLE_ARRAY_TYPE:\n'
+                    r'\g<body>'
+                    r'\g<indent>os << "\\nStart FixedDoubleArray\\n";\n'
+                    r'\g<indent>FixedDoubleArray::cast(*this).FixedDoubleArrayPrint(os);\n'
+                    r'\g<indent>os << "\\nEnd FixedDoubleArray\\n";\n'
+                    r'\g<indent>break;\n',
+                    "Start FixedDoubleArray",
+                ),
+                (
+                    r'(?P<indent>\s*)case SHARED_FUNCTION_INFO_TYPE:\s*\{\n(?P<body>.*?)(?P=indent)\}\n(?P=indent)break;\n',
+                    r'\g<indent>case SHARED_FUNCTION_INFO_TYPE: {\n'
+                    r'\g<body>'
+                    r'\g<indent>  os << "\\nStart SharedFunctionInfo\\n";\n'
+                    r'\g<indent>  shared.SharedFunctionInfoPrint(os);\n'
+                    r'\g<indent>  os << "\\nEnd SharedFunctionInfo\\n";\n'
+                    r'\g<indent>  break;\n'
+                    r'\g<indent>}\n',
+                    "Start SharedFunctionInfo",
+                ),
+            ]
+
+            for pattern, replacement, marker in case_injections:
+                if marker in updated_body:
+                    continue
+                next_body = re.sub(pattern, replacement, updated_body, count=1, flags=re.DOTALL)
+                if next_body != updated_body:
+                    updated_body = next_body
+                    changed = True
+
+            if not changed:
+                return "already_target_state" if already_done else "not_matched_unverified"
+
+            new_content = content[:body_start] + updated_body + content[body_end:]
+            if not self._write_file(file_path, new_content):
+                return "failed"
+
+            updated = self._read_file(file_path)
+            if updated is None:
+                return "failed"
+            updated_range = self._find_function_body_regex(
+                updated,
+                r"void\s+HeapObject::HeapObjectShortPrint\s*\(\s*std::ostream\s*&\s*os\s*\)",
+            )
+            if updated_range is None:
+                return "failed"
+            updated_body = updated[updated_range[0]:updated_range[1]]
+            success = all(marker in updated_body for marker in required_markers)
+            return "applied_now" if success else "failed"
+
+        return "not_matched_unverified"
 
     def apply_all(self) -> bool:
         self.log(f"[SEMANTIC] START verify_only={str(self.verify_only).lower()} v8_dir={self.v8_dir}")
