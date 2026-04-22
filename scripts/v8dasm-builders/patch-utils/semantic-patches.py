@@ -391,9 +391,9 @@ class SemanticPatcher:
                     "Start FixedDoubleArray",
                 ),
                 (
-                    r'(?P<indent>\s*)shared\.SharedFunctionInfoPrint\(os\);\n',
+                    r'(?P<indent>\s*)(?P<call>[^\n]*SharedFunctionInfoPrint\(os\);)\n',
                     r'\g<indent>os << "\\nStart SharedFunctionInfo\\n";\n'
-                    r'\g<indent>shared.SharedFunctionInfoPrint(os);\n'
+                    r'\g<indent>\g<call>\n'
                     r'\g<indent>os << "\\nEnd SharedFunctionInfo\\n";\n',
                     "Start SharedFunctionInfo",
                 ),
@@ -407,7 +407,7 @@ class SemanticPatcher:
                     updated_body = next_body
                     changed = True
 
-            if "Start SharedFunctionInfo" not in updated_body and "shared.SharedFunctionInfoPrint(os);" not in updated_body:
+            if "Start SharedFunctionInfo" not in updated_body and "SharedFunctionInfoPrint(os);" not in updated_body:
                 self.log(f"[SEMANTIC][objects.cc] reason=shared_function_info_call_not_found file={file_path}")
 
             if not changed:
