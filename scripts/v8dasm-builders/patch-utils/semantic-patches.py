@@ -313,9 +313,11 @@ class SemanticPatcher:
             updated_content = updated_content[:body_range[0]] + next_body + updated_content[body_range[1]:]
             changed = True
 
-        required = [
+        required_sfi_markers = [
             "Start BytecodeArray",
             "GetActiveBytecodeArray(isolate)->Disassemble(os);",
+        ]
+        optional_markers = [
             "Start FixedArray",
             "Start ObjectBoilerplateDescription",
             "Start FixedDoubleArray",
@@ -326,7 +328,15 @@ class SemanticPatcher:
             if candidate_sfi_range is None:
                 return False
             candidate_sfi_body = candidate_content[candidate_sfi_range[0]:candidate_sfi_range[1]]
-            return "PrintSourceCode(os);" not in candidate_sfi_body and all(marker in candidate_content for marker in required)
+            return "PrintSourceCode(os);" not in candidate_sfi_body and all(
+                marker in candidate_content for marker in required_sfi_markers
+            )
+
+        optional_missing = [marker for marker in optional_markers if marker not in updated_content]
+        if optional_missing:
+            self.log(
+                "[SEMANTIC][objects-printer.cc] optional_markers_missing=" + ",".join(optional_missing)
+            )
 
         if self.verify_only:
             return "already_target_state" if printer_success(updated_content) else "not_matched_unverified"
@@ -421,15 +431,16 @@ class SemanticPatcher:
     def apply_all(self) -> bool:
         self.log(f"[SEMANTIC] START verify_only={str(self.verify_only).lower()} v8_dir={self.v8_dir}")
         patches = [
-            ("objects-printer.cc", self.patch_objects_printer_cc),
-            ("objects.cc", self.patch_objects_cc),
-            ("string.cc", self.patch_string_cc),
-            ("deserializer.cc", self.patch_deserializer_cc),
-            ("code-serializer.cc", self.patch_code_serializer_cc),
+            ("objects-printer.cc", self.patch_objects_printer_cc, False),
+            ("objects.cc", self.patch_objects_cc, True),
+            ("string.cc", self.patch_string_cc, False),
+            ("deserializer.cc", self.patch_deserializer_cc, False),
+            ("code-serializer.cc", self.patch_code_serializer_cc, False),
         ]
         allowed_success = {"applied_now", "already_target_state"}
+        optional_allowed = allowed_success | {"not_matched_unverified"}
 
-        for name, patch_func in patches:
+        for name, patch_func, optional in patches:
             self.log(f"[SEMANTIC] APPLY file={name}")
             try:
                 status = patch_func()
@@ -437,8 +448,14 @@ class SemanticPatcher:
                 self.log(f"[SEMANTIC] ERROR exception file={name} error={exc}")
                 status = "failed"
             self.record_result(name, status)
+            if optional and status == "not_matched_unverified":
+                self.log(f"[SEMANTIC] OPTIONAL file={name} treated_as=success")
 
-        success = all(status in allowed_success for status in self.results.values())
+        success = all(
+            status in (optional_allowed if optional else allowed_success)
+            for name, _, optional in patches
+            for status in [self.results[name]]
+        )
         applied = sum(status == "applied_now" for status in self.results.values())
         already = sum(status == "already_target_state" for status in self.results.values())
         failed = len(self.results) - applied - already
