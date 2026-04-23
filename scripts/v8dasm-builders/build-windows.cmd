@@ -155,6 +155,15 @@ if exist "%V8_DIR%" (
         if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to remove invalid build root %V8_PARENT_DIR%"
         mkdir "%V8_PARENT_DIR%"
         if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to recreate build root %V8_PARENT_DIR%"
+    ) else (
+        git.exe -C "%V8_DIR%" rev-parse HEAD >nul 2>&1
+        if errorlevel 1 (
+            call :log_line "Existing V8 checkout is corrupt; deleting isolated build root"
+            rmdir /s /q "%V8_PARENT_DIR%"
+            if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to remove corrupt build root %V8_PARENT_DIR%"
+            mkdir "%V8_PARENT_DIR%"
+            if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to recreate build root %V8_PARENT_DIR%"
+        )
     )
 )
 
