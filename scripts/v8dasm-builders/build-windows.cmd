@@ -149,21 +149,13 @@ if exist "%V8_PARENT_DIR%\.gclient" if not exist "%V8_DIR%" (
 if exist "%V8_DIR%" (
     call :log_line "Existing V8 checkout detected"
     call :append_command_output "%STATE_LOG%" "dir /a %V8_PARENT_DIR%"
-    if not exist "%V8_DIR%\.git" (
-        call :log_line "Existing V8 dir is missing .git; deleting isolated build root"
+    call :checkout_is_healthy "%V8_DIR%"
+    if errorlevel 1 (
+        call :log_line "Existing V8 checkout is corrupt; deleting isolated build root"
         rmdir /s /q "%V8_PARENT_DIR%"
-        if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to remove invalid build root %V8_PARENT_DIR%"
+        if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to remove corrupt build root %V8_PARENT_DIR%"
         mkdir "%V8_PARENT_DIR%"
         if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to recreate build root %V8_PARENT_DIR%"
-    ) else (
-        git.exe -C "%V8_DIR%" rev-parse HEAD >nul 2>&1
-        if errorlevel 1 (
-            call :log_line "Existing V8 checkout is corrupt; deleting isolated build root"
-            rmdir /s /q "%V8_PARENT_DIR%"
-            if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to remove corrupt build root %V8_PARENT_DIR%"
-            mkdir "%V8_PARENT_DIR%"
-            if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to recreate build root %V8_PARENT_DIR%"
-        )
     )
 )
 
@@ -401,6 +393,18 @@ set ARG_DEFINE=%~2
 if not "!BUILD_ARGS:%ARG_NEEDLE%=!"=="%BUILD_ARGS%" (
     set V8DASM_DEFINES=!V8DASM_DEFINES! %ARG_DEFINE%
 )
+exit /b 0
+
+:checkout_is_healthy
+if not exist "%~1\.git" exit /b 1
+if exist "%~1\.git\objects\info\alternates" (
+    set ALT_OBJECTS_PATH=
+    set /p ALT_OBJECTS_PATH=<"%~1\.git\objects\info\alternates"
+    if "!ALT_OBJECTS_PATH!"=="" exit /b 1
+    if not exist "!ALT_OBJECTS_PATH!" exit /b 1
+)
+git.exe -C "%~1" rev-parse HEAD >nul 2>&1
+if errorlevel 1 exit /b 1
 exit /b 0
 
 :fail_with_log
