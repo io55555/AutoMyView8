@@ -138,6 +138,7 @@ jobs:
           path: artifacts
 
       - name: Prepare release assets
+        shell: bash
         run: |
           mkdir -p release
           if [ ! -d artifacts ]; then
@@ -146,14 +147,18 @@ jobs:
           fi
 
           shopt -s nullglob
-          for dir in artifacts/v8dasm-*; do
-            platform=$(basename "$dir" | sed 's/v8dasm-//' | sed 's/-v[0-9].*//')
-            version=$(basename "$dir" | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+          for dir in artifacts/v8dasm-windows-x64-*; do
+            artifact_name=$(basename "$dir")
+            build_id=${artifact_name#v8dasm-windows-x64-}
+            exe_files=("$dir"/*.exe)
+            bin_files=("$dir"/*)
 
-            if [ -f "$dir/v8dasm-${version}.exe" ]; then
-              (cd "$dir" && zip "../../release/${platform}-${version}.zip" "v8dasm-${version}.exe")
-            elif [ -f "$dir/v8dasm-${version}" ]; then
-              (cd "$dir" && zip "../../release/${platform}-${version}.zip" "v8dasm-${version}")
+            if [ ${#exe_files[@]} -gt 0 ]; then
+              file_name=$(basename "${exe_files[0]}")
+              (cd "$dir" && zip "../../release/${build_id}.zip" "$file_name")
+            elif [ ${#bin_files[@]} -gt 0 ]; then
+              file_name=$(basename "${bin_files[0]}")
+              (cd "$dir" && zip "../../release/${build_id}.zip" "$file_name")
             fi
           done
 

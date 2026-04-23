@@ -266,8 +266,12 @@ if not exist "%DASM_SOURCE%" call :fail "CLANG" "Source file not found: %DASM_SO
 
 set GN_ARGS=target_os=\"win\" target_cpu=\"x64\" is_component_build=false is_debug=false use_custom_libcxx=false v8_monolithic=true v8_static_library=true v8_enable_disassembler=true v8_enable_object_print=true v8_use_external_startup_data=false dcheck_always_on=false symbol_level=0 is_clang=true
 if not "%BUILD_ARGS%"=="" set GN_ARGS=%GN_ARGS% %BUILD_ARGS%
+set V8DASM_DEFINES=
+call :append_define_from_build_args "v8_enable_pointer_compression=true" "-DV8_COMPRESS_POINTERS"
+call :append_define_from_build_args "v8_enable_sandbox=true" "-DV8_ENABLE_SANDBOX"
 set CL=/D_SILENCE_CXX20_OLD_SHARED_PTR_ATOMIC_SUPPORT_DEPRECATION_WARNING %CL%
 call :log_line "GN Args: %GN_ARGS%"
+call :log_line "v8dasm extra defines: %V8DASM_DEFINES%"
 call :log_line "CL env: %CL%"
 
 call :stage "GN"
@@ -303,6 +307,7 @@ pushd "%V8_DIR%" >nul 2>&1 || call :fail "CLANG" "Failed to enter %V8_DIR%"
 clang++ "%DASM_SOURCE%" ^
     -std=c++20 ^
     -O2 ^
+    %V8DASM_DEFINES% ^
     -Iinclude ^
     -Lout.gn\x64.release\obj ^
     -lv8_monolith ^
@@ -378,6 +383,14 @@ if errorlevel 1 (
     call :log_line "ERROR[INIT]: Required tool not found: %~1"
     call :append_command_output "%BUILD_LOG%" "dir /a %ARTIFACTS_DIR%"
     exit 1
+)
+exit /b 0
+
+:append_define_from_build_args
+set ARG_NEEDLE=%~1
+set ARG_DEFINE=%~2
+if not "!BUILD_ARGS:%ARG_NEEDLE%=!"=="%BUILD_ARGS%" (
+    set V8DASM_DEFINES=!V8DASM_DEFINES! %ARG_DEFINE%
 )
 exit /b 0
 
