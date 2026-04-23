@@ -88,6 +88,8 @@ if not exist "%DEPOT_TOOLS_DIR%" (
     if errorlevel 1 call :fail "INIT" "Failed to extract depot_tools.zip"
     del /q "%USERPROFILE%\depot_tools.zip"
     if errorlevel 1 call :fail "INIT" "Failed to remove depot_tools.zip"
+    call "%DEPOT_TOOLS_DIR%\update_depot_tools.bat" >nul 2>&1
+    if errorlevel 1 call :log_line "update_depot_tools.bat returned non-zero after fresh extract"
 )
 if not exist "%GIT_CACHE_PATH%" mkdir "%GIT_CACHE_PATH%"
 if not exist "%DEPOT_TOOLS_DIR%\git.bat" (
@@ -106,6 +108,9 @@ call :require_tool gclient
 call :require_tool fetch
 call :require_tool gn
 call :require_tool ninja
+
+call gclient.bat >nul 2>&1
+if errorlevel 1 call :log_line "gclient.bat warm-up returned non-zero; continuing with depot_tools wrappers on PATH"
 
 call :append_command_output "%BUILD_LOG%" "where git"
 call :append_command_output "%BUILD_LOG%" "git.exe --version"
@@ -145,7 +150,7 @@ pushd "%V8_PARENT_DIR%" >nul 2>&1 || call :fail "PREPARE_CHECKOUT" "Failed to en
 if not exist "%V8_DIR%" (
     call :stage "FETCH"
     call :log_line "Fetching V8 into %V8_PARENT_DIR%"
-    call fetch v8 > "%FETCH_LOG%" 2>&1
+    call fetch.bat v8 > "%FETCH_LOG%" 2>&1
     if errorlevel 1 (
         popd
         call :fail_with_log "FETCH" "%FETCH_LOG%" "fetch v8 failed"
@@ -213,7 +218,7 @@ popd >nul
 
 call :stage "SYNC"
 pushd "%V8_DIR%" >nul 2>&1 || call :fail "SYNC" "Failed to enter %V8_DIR%"
-call gclient sync -D > "%SYNC_LOG%" 2>&1
+call gclient.bat sync -D > "%SYNC_LOG%" 2>&1
 if errorlevel 1 (
     popd
     call :fail_with_log "SYNC" "%SYNC_LOG%" "gclient sync -D failed"
@@ -254,7 +259,7 @@ call :log_line "CL env: %CL%"
 
 call :stage "GN"
 pushd "%V8_DIR%" >nul 2>&1 || call :fail "GN" "Failed to enter %V8_DIR%"
-call gn gen out.gn\x64.release --args="%GN_ARGS%" > "%GN_LOG%" 2>&1
+call gn.bat gen out.gn\x64.release --args="%GN_ARGS%" > "%GN_LOG%" 2>&1
 if errorlevel 1 (
     popd
     call :fail_with_log "GN" "%GN_LOG%" "gn gen failed"
@@ -267,7 +272,7 @@ popd >nul
 
 call :stage "NINJA"
 pushd "%V8_DIR%" >nul 2>&1 || call :fail "NINJA" "Failed to enter %V8_DIR%"
-call ninja -C out.gn\x64.release v8_monolith > "%NINJA_LOG%" 2>&1
+call ninja.bat -C out.gn\x64.release v8_monolith > "%NINJA_LOG%" 2>&1
 if errorlevel 1 (
     popd
     call :fail_with_log "NINJA" "%NINJA_LOG%" "ninja build failed"
