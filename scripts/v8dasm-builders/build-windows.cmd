@@ -137,6 +137,14 @@ if exist "%V8_PARENT_DIR%\.gclient" (
 ) else (
     call :log_line "No .gclient found in build root yet"
 )
+call :append_command_output "%STATE_LOG%" "dir /a %V8_PARENT_DIR%"
+if exist "%V8_PARENT_DIR%\.gclient" if not exist "%V8_DIR%" (
+    call :log_line "Build root contains .gclient without v8 checkout; deleting isolated build root"
+    rmdir /s /q "%V8_PARENT_DIR%"
+    if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to remove incomplete build root %V8_PARENT_DIR%"
+    mkdir "%V8_PARENT_DIR%"
+    if errorlevel 1 call :fail "PREPARE_CHECKOUT" "Failed to recreate build root %V8_PARENT_DIR%"
+)
 
 if exist "%V8_DIR%" (
     call :log_line "Existing V8 checkout detected"
