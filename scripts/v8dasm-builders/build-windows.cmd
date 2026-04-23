@@ -77,7 +77,6 @@ call :log_line "Ninja log: %NINJA_LOG%"
 call :log_line "Clang log: %CLANG_LOG%"
 
 set DEPOT_TOOLS_WIN_TOOLCHAIN=0
-set DEPOT_TOOLS_UPDATE=0
 set DEPOT_TOOLS_DIR=%USERPROFILE%\depot_tools
 set GIT_CACHE_PATH=%DEPOT_TOOLS_DIR%\.git_cache
 if not exist "%DEPOT_TOOLS_DIR%" (
@@ -97,7 +96,9 @@ if not exist "%DEPOT_TOOLS_DIR%\git.bat" (
     >> "%DEPOT_TOOLS_DIR%\git.bat" echo git.exe %%*
 )
 set PATH=%DEPOT_TOOLS_DIR%;%PATH%
+set DEPOT_TOOLS_UPDATE=0
 call :log_line "DEPOT_TOOLS_WIN_TOOLCHAIN=%DEPOT_TOOLS_WIN_TOOLCHAIN%"
+call :log_line "DEPOT_TOOLS_UPDATE=%DEPOT_TOOLS_UPDATE%"
 call :log_line "GIT_CACHE_PATH=%GIT_CACHE_PATH%"
 call :log_line "Prepended depot_tools to PATH: %DEPOT_TOOLS_DIR%"
 
@@ -109,8 +110,12 @@ call :require_tool fetch
 call :require_tool gn
 call :require_tool ninja
 
+call :log_line "Initializing depot_tools Python bootstrap"
 call gclient.bat >nul 2>&1
-if errorlevel 1 call :log_line "gclient.bat warm-up returned non-zero; continuing with depot_tools wrappers on PATH"
+if errorlevel 1 (
+    call "%DEPOT_TOOLS_DIR%\update_depot_tools.bat" >nul 2>&1
+    if errorlevel 1 call :fail "INIT" "depot_tools bootstrap failed"
+)
 
 call :append_command_output "%BUILD_LOG%" "where git"
 call :append_command_output "%BUILD_LOG%" "git.exe --version"
