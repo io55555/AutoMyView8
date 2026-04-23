@@ -24,7 +24,9 @@
       "Bash(F:/node-v24.11.0-win-x64/AutoView8/Bin/VersionDetector.exe *)",
       "Bash(Bin/VersionDetector.exe *)",
       "WebFetch(domain:stackoverflow.com)",
-      "WebFetch(domain:v8.github.io)"
+      "WebFetch(domain:v8.github.io)",
+      "Bash(\"Bin/v8dasm-13.0.245.20-electron-v33.3.x.exe\" \"preload.jsc\")",
+      "Bash(\"Bin/v8dasm-13.0.245.16-electron-v33.0.x.exe\" \"preload.jsc\")"
     ]
   }
 }

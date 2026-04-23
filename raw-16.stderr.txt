@@ -1,0 +1,2 @@
+[v8dasm] default_dummy_source: CachedData was rejected after compile
+[v8dasm] bytenode_header_patch_extended: CachedData was rejected after compile
