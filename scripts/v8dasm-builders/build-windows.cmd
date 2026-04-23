@@ -79,6 +79,7 @@ call :log_line "Clang log: %CLANG_LOG%"
 set DEPOT_TOOLS_WIN_TOOLCHAIN=0
 set DEPOT_TOOLS_UPDATE=0
 set DEPOT_TOOLS_DIR=%USERPROFILE%\depot_tools
+set GIT_CACHE_PATH=%DEPOT_TOOLS_DIR%\.git_cache
 if not exist "%DEPOT_TOOLS_DIR%" (
     call :log_line "depot_tools not found at %DEPOT_TOOLS_DIR%; downloading fresh copy"
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest 'https://storage.googleapis.com/chrome-infra/depot_tools.zip' -OutFile '%USERPROFILE%\depot_tools.zip'"
@@ -88,8 +89,14 @@ if not exist "%DEPOT_TOOLS_DIR%" (
     del /q "%USERPROFILE%\depot_tools.zip"
     if errorlevel 1 call :fail "INIT" "Failed to remove depot_tools.zip"
 )
+if not exist "%GIT_CACHE_PATH%" mkdir "%GIT_CACHE_PATH%"
+if not exist "%DEPOT_TOOLS_DIR%\git.bat" (
+    > "%DEPOT_TOOLS_DIR%\git.bat" echo @echo off
+    >> "%DEPOT_TOOLS_DIR%\git.bat" echo git.exe %%*
+)
 set PATH=%DEPOT_TOOLS_DIR%;%PATH%
 call :log_line "DEPOT_TOOLS_WIN_TOOLCHAIN=%DEPOT_TOOLS_WIN_TOOLCHAIN%"
+call :log_line "GIT_CACHE_PATH=%GIT_CACHE_PATH%"
 call :log_line "Prepended depot_tools to PATH: %DEPOT_TOOLS_DIR%"
 
 call :require_tool git
