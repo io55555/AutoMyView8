@@ -127,6 +127,11 @@ static bool applyCachedHeaderPatch(std::vector<uint8_t>* bytecode,
 static bool tryLoadBytecode(const std::vector<uint8_t>& original_bytecode,
                             const LoadAttempt& attempt) {
   std::vector<uint8_t> bytecode = original_bytecode;
+  std::cerr << "[v8dasm] trying attempt=" << attempt.label
+            << " patch_offset=" << attempt.patch_offset
+            << " patch_length=" << attempt.patch_length
+            << " use_source_hash_dummy=" << (attempt.use_source_hash_dummy ? "true" : "false")
+            << std::endl;
 
   std::string source_text = kDefaultDummySource;
   if (attempt.use_source_hash_dummy) {
@@ -143,6 +148,12 @@ static bool tryLoadBytecode(const std::vector<uint8_t>& original_bytecode,
     std::cerr << "[v8dasm] " << attempt.label << ": failed to patch cached data header"
               << std::endl;
     return false;
+  }
+  if (attempt.patch_length != 0) {
+    std::cerr << "[v8dasm] " << attempt.label << ": patched cached data bytes ["
+              << attempt.patch_offset << ", "
+              << (attempt.patch_offset + attempt.patch_length - 1) << "]"
+              << std::endl;
   }
 
   Local<String> source_string;
@@ -189,6 +200,7 @@ static bool tryLoadBytecode(const std::vector<uint8_t>& original_bytecode,
     return false;
   }
 
+  std::cerr << "[v8dasm] " << attempt.label << ": cache accepted" << std::endl;
   (void)resolved_script;
   return true;
 }
