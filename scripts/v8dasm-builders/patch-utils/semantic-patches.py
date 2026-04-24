@@ -266,21 +266,23 @@ class SemanticPatcher:
             source_pattern = r"^\s*PrintSourceCode\(os\);\n"
             next_body = re.sub(
                 source_pattern,
-                lambda _: bytecode_block,
+                "",
                 sfi_body,
                 count=1,
                 flags=re.MULTILINE,
             )
+            if next_body != sfi_body and '  os << "\\n";\n' in next_body:
+                next_body = next_body.replace('  os << "\\n";\n', '  os << "\\n";\n' + bytecode_block, 1)
             if next_body == sfi_body:
                 fallback_anchors = [
+                    '  os << "\\n";\n',
                     '  os << "\\n - script: " << Brief(script());\n',
                     '  os << "\\n - function token position: " << function_token_position();\n',
-                    '  os << "\\n";\n',
                 ]
                 next_body = sfi_body
                 for anchor in fallback_anchors:
                     if anchor in next_body:
-                        next_body = next_body.replace(anchor, bytecode_block + anchor, 1)
+                        next_body = next_body.replace(anchor, anchor + bytecode_block, 1)
                         break
             if next_body != sfi_body:
                 updated_content = updated_content[:sfi_range[0]] + next_body + updated_content[sfi_range[1]:]
