@@ -309,7 +309,6 @@ clang++ "%DASM_SOURCE%" ^
     -std=c++20 ^
     -O2 ^
     %V8DASM_DEFINES% ^
-    -I. ^
     -Iinclude ^
     -Lout.gn\x64.release\obj ^
     -lv8_monolith ^
