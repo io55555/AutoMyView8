@@ -37,7 +37,23 @@ def get_version(view8_dir, file_name):
         return None
 
 
-def build_candidate_binaries(view8_dir, detected_version=None, override_binary=None):
+def read_cached_header_words(file_name):
+    with open(file_name, 'rb') as infile:
+        header = infile.read(24)
+    if len(header) < 24:
+        return None
+    return {
+        'word0': int.from_bytes(header[0:4], 'little'),
+        'word1': int.from_bytes(header[4:8], 'little'),
+        'word2': int.from_bytes(header[8:12], 'little'),
+        'word3': int.from_bytes(header[12:16], 'little'),
+        'word4': int.from_bytes(header[16:20], 'little'),
+        'payload_length': int.from_bytes(header[20:24], 'little'),
+    }
+
+
+
+def build_candidate_binaries(view8_dir, file_name, detected_version=None, override_binary=None):
     candidates = []
     seen = set()
 
@@ -57,6 +73,21 @@ def build_candidate_binaries(view8_dir, detected_version=None, override_binary=N
         view8_dir,
     ]
 
+    header_words = read_cached_header_words(file_name)
+    prefer_node_candidates = detected_version is None and header_words is not None and header_words['word2'] > 512
+    if header_words is not None:
+        print(
+            '[parse_v8cache] Header words '
+            f"word0=0x{header_words['word0']:08x} "
+            f"word1=0x{header_words['word1']:08x} "
+            f"word2={header_words['word2']} "
+            f"word3=0x{header_words['word3']:08x} "
+            f"word4=0x{header_words['word4']:08x} "
+            f"payload_length={header_words['payload_length']}"
+        )
+        if prefer_node_candidates:
+            print('[parse_v8cache] Falling back to Node candidates first because the JSC header looks unlike the known Electron cache shape')
+
     if detected_version:
         for candidate_dir in candidate_dirs:
             detected_default = os.path.join(candidate_dir, f'{detected_version}.exe')
@@ -69,21 +100,21 @@ def build_candidate_binaries(view8_dir, detected_version=None, override_binary=N
                         f'configured match for {detected_version}',
                     )
 
-    for config in version_configs:
-        if 'Electron' in config.get('node_version', ''):
-            for candidate_dir in candidate_dirs:
-                add_candidate(
-                    os.path.join(candidate_dir, config.get('binary_name', f"{config['v8_version']}.exe")),
-                    f"electron candidate {config['v8_version']}",
-                )
+    ordered_configs = []
+    if prefer_node_candidates:
+        ordered_configs.extend([config for config in version_configs if 'Electron' not in config.get('node_version', '')])
+        ordered_configs.extend([config for config in version_configs if 'Electron' in config.get('node_version', '')])
+    else:
+        ordered_configs.extend([config for config in version_configs if 'Electron' in config.get('node_version', '')])
+        ordered_configs.extend([config for config in version_configs if 'Electron' not in config.get('node_version', '')])
 
-    for config in version_configs:
-        if 'Electron' not in config.get('node_version', ''):
-            for candidate_dir in candidate_dirs:
-                add_candidate(
-                    os.path.join(candidate_dir, config.get('binary_name', f"{config['v8_version']}.exe")),
-                    f"node candidate {config['v8_version']}",
-                )
+    for config in ordered_configs:
+        candidate_kind = 'electron' if 'Electron' in config.get('node_version', '') else 'node'
+        for candidate_dir in candidate_dirs:
+            add_candidate(
+                os.path.join(candidate_dir, config.get('binary_name', f"{config['v8_version']}.exe")),
+                f"{candidate_kind} candidate {config['v8_version']}",
+            )
 
     return candidates
 
@@ -130,7 +161,7 @@ def parse_v8cache_file(file_name, out_name, view8_dir, binary_path):
     else:
         detected_version = get_version(view8_dir, file_name)
 
-    candidates = build_candidate_binaries(view8_dir, detected_version=detected_version, override_binary=binary_path)
+    candidates = build_candidate_binaries(view8_dir, file_name, detected_version=detected_version, override_binary=binary_path)
     if not candidates:
         raise FileNotFoundError(
             'No disassembler candidates were found. Build candidate binaries under Bin/ or pass --path.'

@@ -20,8 +20,8 @@ constexpr char kZeroWidthSpaceUtf8[] = "\xE2\x80\x8B";
 
 struct LoadAttempt {
   const char* label;
-  bool patch_header;
-  bool patch_additional_header;
+  size_t patch_offset;
+  size_t patch_length;
   bool use_source_hash_dummy;
 };
 }  // namespace
@@ -70,9 +70,10 @@ static bool createUtf8String(const std::string& text, Local<String>* out) {
       .ToLocal(out);
 }
 
-static bool createDummyBytecode(std::vector<uint8_t>* out) {
+static bool createDummyBytecode(const std::string& source_code,
+                              std::vector<uint8_t>* out) {
   Local<String> source_text;
-  if (!createUtf8String(kDefaultDummySource, &source_text)) {
+  if (!createUtf8String(source_code, &source_text)) {
     return false;
   }
 
@@ -100,39 +101,32 @@ static bool createDummyBytecode(std::vector<uint8_t>* out) {
   return true;
 }
 
-static bool applyBytenodeHeaderPatch(std::vector<uint8_t>* bytecode,
-                                     bool patch_additional_header) {
-  if (bytecode->size() < 16) {
+static bool applyCachedHeaderPatch(std::vector<uint8_t>* bytecode,
+                                 const std::string& source_code,
+                                 size_t patch_offset,
+                                 size_t patch_length) {
+  if (patch_length == 0) {
+    return true;
+  }
+  if (bytecode->size() < patch_offset + patch_length) {
     return false;
   }
 
   std::vector<uint8_t> dummy_bytecode;
-  if (!createDummyBytecode(&dummy_bytecode) || dummy_bytecode.size() < 16) {
+  if (!createDummyBytecode(source_code, &dummy_bytecode) ||
+      dummy_bytecode.size() < patch_offset + patch_length) {
     return false;
   }
 
-  std::copy(dummy_bytecode.begin() + 12, dummy_bytecode.begin() + 16,
-            bytecode->begin() + 12);
-
-  if (patch_additional_header) {
-    if (bytecode->size() < 20 || dummy_bytecode.size() < 20) {
-      return false;
-    }
-    std::copy(dummy_bytecode.begin() + 16, dummy_bytecode.begin() + 20,
-              bytecode->begin() + 16);
-  }
-
+  std::copy(dummy_bytecode.begin() + static_cast<std::ptrdiff_t>(patch_offset),
+            dummy_bytecode.begin() + static_cast<std::ptrdiff_t>(patch_offset + patch_length),
+            bytecode->begin() + static_cast<std::ptrdiff_t>(patch_offset));
   return true;
 }
 
 static bool tryLoadBytecode(const std::vector<uint8_t>& original_bytecode,
                             const LoadAttempt& attempt) {
   std::vector<uint8_t> bytecode = original_bytecode;
-  if (attempt.patch_header && !applyBytenodeHeaderPatch(&bytecode, attempt.patch_additional_header)) {
-    std::cerr << "[v8dasm] " << attempt.label << ": failed to patch cached data header"
-              << std::endl;
-    return false;
-  }
 
   std::string source_text = kDefaultDummySource;
   if (attempt.use_source_hash_dummy) {
@@ -142,6 +136,13 @@ static bool tryLoadBytecode(const std::vector<uint8_t>& original_bytecode,
                 << ": source hash dummy code is empty" << std::endl;
       return false;
     }
+  }
+
+  if (!applyCachedHeaderPatch(&bytecode, source_text, attempt.patch_offset,
+                              attempt.patch_length)) {
+    std::cerr << "[v8dasm] " << attempt.label << ": failed to patch cached data header"
+              << std::endl;
+    return false;
   }
 
   Local<String> source_string;
@@ -195,9 +196,12 @@ static bool tryLoadBytecode(const std::vector<uint8_t>& original_bytecode,
 static bool loadBytecode(uint8_t* bytecodeBuffer, int length) {
   std::vector<uint8_t> original_bytecode(bytecodeBuffer, bytecodeBuffer + length);
   const std::vector<LoadAttempt> attempts = {
-      {"default_dummy_source", false, false, false},
-      {"bytenode_header_patch_extended", true, true, true},
-      {"bytenode_header_patch_basic", true, false, true},
+      {"default_dummy_source", 0, 0, false},
+      {"source_hash_dummy", 0, 0, true},
+      {"patch_words_12_19_source_hash", 12, 8, true},
+      {"patch_words_8_19_source_hash", 8, 12, true},
+      {"patch_words_12_19_default_dummy", 12, 8, false},
+      {"patch_words_8_19_default_dummy", 8, 12, false},
   };
 
   for (const LoadAttempt& attempt : attempts) {
