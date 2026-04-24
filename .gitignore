@@ -1,6 +1,8 @@
 *.exe
 *.pyc
 *.jsc
+*.err
+*.tmp
 .claude/
 __pycache__/
 Bin/

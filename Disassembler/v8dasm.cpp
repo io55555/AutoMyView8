@@ -9,6 +9,8 @@
 
 #include "v8.h"
 #include "libplatform/libplatform.h"
+#include "src/api/api-inl.h"
+#include "src/objects/shared-function-info.h"
 
 using namespace v8;
 
@@ -125,6 +127,14 @@ static bool applyBytenodeHeaderPatch(std::vector<uint8_t>* bytecode,
   return true;
 }
 
+static void printUnboundScript(Local<UnboundScript> script) {
+  auto shared_function_info = v8::Utils::OpenDirectHandle(*script);
+  std::cout << "\nStart SharedFunctionInfo\n";
+  shared_function_info->SharedFunctionInfoPrint(std::cout);
+  std::cout << "\nEnd SharedFunctionInfo\n";
+  std::cout << std::flush;
+}
+
 static bool tryLoadBytecode(const std::vector<uint8_t>& original_bytecode,
                             const LoadAttempt& attempt) {
   std::vector<uint8_t> bytecode = original_bytecode;
@@ -188,7 +198,7 @@ static bool tryLoadBytecode(const std::vector<uint8_t>& original_bytecode,
     return false;
   }
 
-  (void)resolved_script;
+  printUnboundScript(resolved_script);
   return true;
 }
 

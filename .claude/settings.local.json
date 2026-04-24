@@ -26,7 +26,8 @@
       "WebFetch(domain:stackoverflow.com)",
       "WebFetch(domain:v8.github.io)",
       "Bash(\"Bin/v8dasm-13.0.245.20-electron-v33.3.x.exe\" \"preload.jsc\")",
-      "Bash(\"Bin/v8dasm-13.0.245.16-electron-v33.0.x.exe\" \"preload.jsc\")"
+      "Bash(\"Bin/v8dasm-13.0.245.16-electron-v33.0.x.exe\" \"preload.jsc\")",
+      "Bash(\"Bin/13.6.233.17.exe\" \"preload.jsc\")"
     ]
   }
 }
