@@ -407,11 +407,7 @@ class SemanticPatcher:
         if content is None:
             return "failed"
 
-        signature_pattern = (
-            r"MaybeHandle<SharedFunctionInfo>\s+BackgroundDeserializeTask::Finish\s*"
-            r"\(\s*Isolate\*\s+isolate\s*,\s*Handle<String>\s+source\s*,\s*"
-            r"ScriptOriginOptions\s+origin_options\s*\)"
-        )
+        signature_pattern = r"BackgroundDeserializeTask::Finish\s*\("
         body_range = self._find_function_body_regex(content, signature_pattern, flags=re.MULTILINE)
         if body_range is None:
             self.log("[SEMANTIC][compiler.cc] reason=finish_signature_not_found")
@@ -434,18 +430,16 @@ class SemanticPatcher:
             return "already_target_state"
 
         direct_return_pattern = (
-            r"(?P<indent>\s*)return\s+CodeSerializer::FinishOffThreadDeserialize\(\s*\n"
-            r"(?P=indent)\s*isolate\s*,\s*std::move\(off_thread_data_\)\s*,\s*&cached_data_\s*,\s*source\s*,\s*\n"
-            r"(?P=indent)\s*origin_options\s*\);"
+            r"(?P<indent>\s*)return\s+CodeSerializer::FinishOffThreadDeserialize\("
+            r"(?P<call_body>[\s\S]*?)"
+            r"(?P<closing>\);)"
         )
 
         def replace_finish_return(match: re.Match[str]) -> str:
             indent = match.group("indent")
+            call_body = match.group("call_body")
             return (
-                f"{indent}MaybeHandle<SharedFunctionInfo> maybe_result =\n"
-                f"{indent}    CodeSerializer::FinishOffThreadDeserialize(\n"
-                f"{indent}        isolate, std::move(off_thread_data_), &cached_data_, source,\n"
-                f"{indent}        origin_options);\n"
+                f"{indent}MaybeHandle<SharedFunctionInfo> maybe_result = CodeSerializer::FinishOffThreadDeserialize({call_body}{match.group('closing')}\n"
                 f"{indent}Handle<SharedFunctionInfo> result;\n"
                 f"{indent}if (maybe_result.ToHandle(&result)) {{\n"
                 f"{indent}  std::cout << \"\\nStart SharedFunctionInfo\\n\";\n"
@@ -562,7 +556,7 @@ class SemanticPatcher:
             ("string.cc", self.patch_string_cc, False),
             ("deserializer.cc", self.patch_deserializer_cc, False),
             ("code-serializer.cc", self.patch_code_serializer_cc, False),
-            ("compiler.cc", self.patch_compiler_cc, False),
+            ("compiler.cc", self.patch_compiler_cc, True),
         ]
         allowed_success = {"applied_now", "already_target_state"}
         optional_allowed = allowed_success | {"not_matched_unverified"}
