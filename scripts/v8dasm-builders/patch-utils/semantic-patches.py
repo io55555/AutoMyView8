@@ -401,6 +401,84 @@ class SemanticPatcher:
 
         return "applied_now" if printer_success(updated) else "failed"
 
+    def patch_compiler_cc(self) -> str:
+        file_path = self.v8_dir / "src/codegen/compiler.cc"
+        content = self._read_file(file_path)
+        if content is None:
+            return "failed"
+
+        signature_pattern = (
+            r"MaybeHandle<SharedFunctionInfo>\s+BackgroundDeserializeTask::Finish\s*"
+            r"\(\s*Isolate\*\s+isolate\s*,\s*Handle<String>\s+source\s*,\s*"
+            r"ScriptOriginOptions\s+origin_options\s*\)"
+        )
+        body_range = self._find_function_body_regex(content, signature_pattern, flags=re.MULTILINE)
+        if body_range is None:
+            self.log("[SEMANTIC][compiler.cc] reason=finish_signature_not_found")
+            return "not_matched_unverified"
+
+        body = content[body_range[0]:body_range[1]]
+        print_markers = [
+            "MaybeHandle<SharedFunctionInfo> maybe_result =",
+            "CodeSerializer::FinishOffThreadDeserialize(",
+            'std::cout << "\\nStart SharedFunctionInfo\\n";',
+            'result->SharedFunctionInfoPrint(std::cout);',
+            'std::cout << "\\nEnd SharedFunctionInfo\\n";',
+            'std::cout << std::flush;',
+            "return maybe_result;",
+        ]
+        if self.verify_only:
+            return "already_target_state" if self._contains_in_order(body, print_markers) else "not_matched_unverified"
+
+        if self._contains_in_order(body, print_markers):
+            return "already_target_state"
+
+        direct_return_pattern = (
+            r"(?P<indent>\s*)return\s+CodeSerializer::FinishOffThreadDeserialize\(\s*\n"
+            r"(?P=indent)\s*isolate\s*,\s*std::move\(off_thread_data_\)\s*,\s*&cached_data_\s*,\s*source\s*,\s*\n"
+            r"(?P=indent)\s*origin_options\s*\);"
+        )
+
+        def replace_finish_return(match: re.Match[str]) -> str:
+            indent = match.group("indent")
+            return (
+                f"{indent}MaybeHandle<SharedFunctionInfo> maybe_result =\n"
+                f"{indent}    CodeSerializer::FinishOffThreadDeserialize(\n"
+                f"{indent}        isolate, std::move(off_thread_data_), &cached_data_, source,\n"
+                f"{indent}        origin_options);\n"
+                f"{indent}Handle<SharedFunctionInfo> result;\n"
+                f"{indent}if (maybe_result.ToHandle(&result)) {{\n"
+                f"{indent}  std::cout << \"\\nStart SharedFunctionInfo\\n\";\n"
+                f"{indent}  result->SharedFunctionInfoPrint(std::cout);\n"
+                f"{indent}  std::cout << \"\\nEnd SharedFunctionInfo\\n\";\n"
+                f"{indent}  std::cout << std::flush;\n"
+                f"{indent}}}\n"
+                f"{indent}return maybe_result;"
+            )
+
+        updated_content = re.sub(
+            direct_return_pattern,
+            replace_finish_return,
+            content,
+            count=1,
+            flags=re.MULTILINE,
+        )
+        if updated_content == content:
+            self.log("[SEMANTIC][compiler.cc] reason=finish_return_anchor_not_found")
+            return "not_matched_unverified"
+
+        if not self._write_file(file_path, updated_content):
+            return "failed"
+
+        updated = self._read_file(file_path)
+        if updated is None:
+            return "failed"
+        updated_range = self._find_function_body_regex(updated, signature_pattern, flags=re.MULTILINE)
+        if updated_range is None:
+            return "failed"
+        updated_body = updated[updated_range[0]:updated_range[1]]
+        return "applied_now" if self._contains_in_order(updated_body, print_markers) else "failed"
+
     def patch_objects_cc(self) -> str:
         candidate_files = [
             self.v8_dir / "src/objects/objects.cc",
@@ -484,6 +562,7 @@ class SemanticPatcher:
             ("string.cc", self.patch_string_cc, False),
             ("deserializer.cc", self.patch_deserializer_cc, False),
             ("code-serializer.cc", self.patch_code_serializer_cc, False),
+            ("compiler.cc", self.patch_compiler_cc, False),
         ]
         allowed_success = {"applied_now", "already_target_state"}
         optional_allowed = allowed_success | {"not_matched_unverified"}
