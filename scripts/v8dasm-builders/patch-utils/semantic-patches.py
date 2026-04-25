@@ -370,12 +370,9 @@ class SemanticPatcher:
             if candidate_sfi_range is None:
                 return False
             candidate_sfi_body = candidate_content[candidate_sfi_range[0]:candidate_sfi_range[1]]
-            first_bytecode_marker = self._find_first_marker(candidate_sfi_body, bytecode_markers)
-            script_marker = candidate_sfi_body.find('  os << "\\n - script: " << Brief(script());\n')
             return (
                 "PrintSourceCode(os);" not in candidate_sfi_body
                 and self._contains_in_order(candidate_sfi_body, bytecode_markers)
-                and (script_marker == -1 or first_bytecode_marker == -1 or first_bytecode_marker < script_marker)
             )
 
         if not has_bytecode_block:

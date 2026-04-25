@@ -2,7 +2,7 @@ diff --git a/src/diagnostics/objects-printer.cc b/src/diagnostics/objects-printe
 index 5b546e29926..45d7b50b7f5 100644
 --- a/src/diagnostics/objects-printer.cc
 +++ b/src/diagnostics/objects-printer.cc
-@@ -1687,7 +1687,15 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {
+@@ -1687,7 +1687,6 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {
    os << "\n - data: " << Brief(function_data(kAcquireLoad));
    os << "\n - code (from data): ";
    os << Brief(GetCode());
@@ -10,14 +10,17 @@ index 5b546e29926..45d7b50b7f5 100644
    // Script files are often large, thus only print their {Brief} representation.
    os << "\n - script: " << Brief(script());
    os << "\n - function token position: " << function_token_position();
-+  if (HasBytecodeArray()) {
-+    os << "\nStart BytecodeArray\n";
-+    GetActiveBytecodeArray(isolate)->Disassemble(os);
-+    os << "\nEnd BytecodeArray\n";
-+    os << std::flush;
-+  }
+@@ -1710,6 +1709,10 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {
+     os << "<none>";
+   }
+   os << "\n";
++  os << "\nStart BytecodeArray\n";
++  GetActiveBytecodeArray(isolate)->Disassemble(os);
++  os << "\nEnd BytecodeArray\n";
++  os << std::flush;
+ }
 
-  void JSGlobalProxy::JSGlobalProxyPrint(std::ostream& os) {
+ void JSGlobalProxy::JSGlobalProxyPrint(std::ostream& os) {
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
 index 559160358c1..420b3da2b66 100644
 --- a/src/objects/objects.cc
@@ -81,7 +84,7 @@ index cd134f84055..285d55fda5e 100644
 @@ -477,13 +477,6 @@ void String::StringShortPrint(StringStream* accumulator) {
    accumulator->Add("<String[%u]: ", len);
    accumulator->Add(PrefixForDebugPrint());
- 
+
 -  if (len > kMaxShortPrintLength) {
 -    accumulator->Add("...<truncated>>");
 -    accumulator->Add(SuffixForDebugPrint());
@@ -110,7 +113,7 @@ index 3f380e6a2ff..1f55cb9009a 100644
                                            Script::cast(result->script()));
    if (FLAG_profile_deserialization) {
 @@ -651,9 +657,7 @@ SerializedCodeData::SerializedCodeData(const std::vector<byte>* payload,
- 
+
  SerializedCodeSanityCheckResult SerializedCodeData::SanityCheck(
      uint32_t expected_source_hash) const {
 -  SerializedCodeSanityCheckResult result = SanityCheckWithoutSource();
@@ -118,5 +121,17 @@ index 3f380e6a2ff..1f55cb9009a 100644
 -  return SanityCheckJustSource(expected_source_hash);
 +  return SerializedCodeSanityCheckResult::kSuccess;
  }
- 
+
  SerializedCodeSanityCheckResult SerializedCodeData::SanityCheckJustSource(
+diff --git a/src/snapshot/deserializer.cc b/src/snapshot/deserializer.cc
+index 09fffbbed37..8ce3b2680ef 100644
+--- a/src/snapshot/deserializer.cc
++++ b/src/snapshot/deserializer.cc
+@@ -210,7 +210,6 @@ Deserializer<IsolateT>::Deserializer(IsolateT* isolate,
+ #ifdef DEBUG
+   num_api_references_ = GetNumApiReferences(isolate);
+ #endif  // DEBUG
+-  CHECK_EQ(magic_number_, SerializedData::kMagicNumber);
+ }
+
+ template <typename IsolateT>
