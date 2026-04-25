@@ -88,6 +88,19 @@ class SemanticPatcher:
                     return brace_start + 1, index
         return None
 
+    def _contains_in_order(self, content: str, markers: list[str]) -> bool:
+        next_index = 0
+        for marker in markers:
+            next_index = content.find(marker, next_index)
+            if next_index == -1:
+                return False
+            next_index += len(marker)
+        return True
+
+    def _find_first_marker(self, content: str, markers: list[str]) -> int:
+        positions = [content.find(marker) for marker in markers if marker in content]
+        return min(positions) if positions else -1
+
     def _apply_or_verify_block(
         self,
         name: str,
@@ -158,7 +171,13 @@ class SemanticPatcher:
             return "not_matched_unverified"
 
         deserialize_body = content[deserialize_range[0]:deserialize_range[1]]
-        has_print_block = "Start SharedFunctionInfo" in deserialize_body
+        print_markers = [
+            'std::cout << "\\nStart SharedFunctionInfo\\n";',
+            'result->SharedFunctionInfoPrint(std::cout);',
+            'std::cout << "\\nEnd SharedFunctionInfo\\n";',
+            'std::cout << std::flush;',
+        ]
+        has_print_block = self._contains_in_order(deserialize_body, print_markers)
         has_sanity_override = "return SerializedCodeSanityCheckResult::kSuccess;" in content
 
         if self.verify_only:
@@ -233,7 +252,7 @@ class SemanticPatcher:
             return "failed"
         updated_body = updated[updated_range[0]:updated_range[1]]
         success = (
-            "Start SharedFunctionInfo" in updated_body
+            self._contains_in_order(updated_body, print_markers)
             and "return SerializedCodeSanityCheckResult::kSuccess;" in updated
         )
         return "applied_now" if success else "failed"
@@ -254,7 +273,13 @@ class SemanticPatcher:
 
         sfi_body = updated_content[sfi_range[0]:sfi_range[1]]
         source_removed = "PrintSourceCode(os);" not in sfi_body
-        has_bytecode_block = "Start BytecodeArray" in sfi_body and "GetActiveBytecodeArray(isolate)->Disassemble(os);" in sfi_body
+        bytecode_markers = [
+            'os << "\\nStart BytecodeArray\\n";',
+            'GetActiveBytecodeArray(isolate)->Disassemble(os);',
+            'os << "\\nEnd BytecodeArray\\n";',
+            'os << std::flush;',
+        ]
+        has_bytecode_block = self._contains_in_order(sfi_body, bytecode_markers)
         bytecode_block = (
             '  os << "\\nStart BytecodeArray\\n";\n'
             '  GetActiveBytecodeArray(isolate)->Disassemble(os);\n'
@@ -289,7 +314,7 @@ class SemanticPatcher:
                 changed = True
                 sfi_body = next_body
                 source_removed = "PrintSourceCode(os);" not in sfi_body
-                has_bytecode_block = "Start BytecodeArray" in sfi_body and "GetActiveBytecodeArray(isolate)->Disassemble(os);" in sfi_body
+                has_bytecode_block = self._contains_in_order(sfi_body, bytecode_markers)
 
         if not source_removed:
             source_pattern = r"^\s*PrintSourceCode\(os\);\n"
@@ -334,10 +359,6 @@ class SemanticPatcher:
             updated_content = updated_content[:body_range[0]] + next_body + updated_content[body_range[1]:]
             changed = True
 
-        required_sfi_markers = [
-            "Start BytecodeArray",
-            "GetActiveBytecodeArray(isolate)->Disassemble(os);",
-        ]
         optional_markers = [
             "Start FixedArray",
             "Start ObjectBoilerplateDescription",
@@ -349,8 +370,12 @@ class SemanticPatcher:
             if candidate_sfi_range is None:
                 return False
             candidate_sfi_body = candidate_content[candidate_sfi_range[0]:candidate_sfi_range[1]]
-            return "PrintSourceCode(os);" not in candidate_sfi_body and all(
-                marker in candidate_content for marker in required_sfi_markers
+            first_bytecode_marker = self._find_first_marker(candidate_sfi_body, bytecode_markers)
+            script_marker = candidate_sfi_body.find('  os << "\\n - script: " << Brief(script());\n')
+            return (
+                "PrintSourceCode(os);" not in candidate_sfi_body
+                and self._contains_in_order(candidate_sfi_body, bytecode_markers)
+                and (script_marker == -1 or first_bytecode_marker == -1 or first_bytecode_marker < script_marker)
             )
 
         if not has_bytecode_block:

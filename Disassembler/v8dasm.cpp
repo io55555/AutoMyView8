@@ -200,7 +200,8 @@ static bool tryLoadBytecode(const std::vector<uint8_t>& original_bytecode,
     return false;
   }
 
-  std::cerr << "[v8dasm] " << attempt.label << ": cache accepted" << std::endl;
+  std::cerr << "[v8dasm] " << attempt.label
+            << ": cache accepted; waiting for patched V8 stdout" << std::endl;
   (void)resolved_script;
   return true;
 }
