@@ -415,8 +415,7 @@ class SemanticPatcher:
 
         body = content[body_range[0]:body_range[1]]
         print_markers = [
-            "MaybeHandle<SharedFunctionInfo> maybe_result =",
-            "CodeSerializer::FinishOffThreadDeserialize(",
+            "maybe_result = CodeSerializer::FinishOffThreadDeserialize(",
             'std::cout << "\\nStart SharedFunctionInfo\\n";',
             'result->SharedFunctionInfoPrint(std::cout);',
             'std::cout << "\\nEnd SharedFunctionInfo\\n";',
@@ -439,8 +438,8 @@ class SemanticPatcher:
             indent = match.group("indent")
             call_body = match.group("call_body")
             return (
-                f"{indent}MaybeHandle<SharedFunctionInfo> maybe_result = CodeSerializer::FinishOffThreadDeserialize({call_body}{match.group('closing')}\n"
-                f"{indent}Handle<SharedFunctionInfo> result;\n"
+                f"{indent}auto maybe_result = CodeSerializer::FinishOffThreadDeserialize({call_body}{match.group('closing')}\n"
+                f"{indent}DirectHandle<SharedFunctionInfo> result;\n"
                 f"{indent}if (maybe_result.ToHandle(&result)) {{\n"
                 f"{indent}  std::cout << \"\\nStart SharedFunctionInfo\\n\";\n"
                 f"{indent}  result->SharedFunctionInfoPrint(std::cout);\n"
