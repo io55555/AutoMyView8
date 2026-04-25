@@ -162,31 +162,41 @@ class SemanticPatcher:
         if content is None:
             return "failed"
 
-        deserialize_range = self._find_function_body_regex(
-            content,
-            r"CodeSerializer::Deserialize\s*\(",
-        )
+        deserialize_signature = r"CodeSerializer::Deserialize\s*\("
+        finish_signature = r"CodeSerializer::FinishOffThreadDeserialize\s*\("
+        deserialize_range = self._find_function_body_regex(content, deserialize_signature)
         if deserialize_range is None:
             self.log("[SEMANTIC][code-serializer.cc] reason=deserialize_signature_not_found")
             return "not_matched_unverified"
 
-        deserialize_body = content[deserialize_range[0]:deserialize_range[1]]
         print_markers = [
             'std::cout << "\\nStart SharedFunctionInfo\\n";',
             'result->SharedFunctionInfoPrint(std::cout);',
             'std::cout << "\\nEnd SharedFunctionInfo\\n";',
             'std::cout << std::flush;',
         ]
-        has_print_block = self._contains_in_order(deserialize_body, print_markers)
-        has_sanity_override = "return SerializedCodeSanityCheckResult::kSuccess;" in content
 
-        if self.verify_only:
-            return "already_target_state" if (has_print_block and has_sanity_override) else "not_matched_unverified"
+        def function_has_print_block(candidate_content: str, signature_pattern: str) -> bool | None:
+            function_range = self._find_function_body_regex(candidate_content, signature_pattern)
+            if function_range is None:
+                return None
+            function_body = candidate_content[function_range[0]:function_range[1]]
+            return self._contains_in_order(function_body, print_markers)
 
-        updated_content = content
-        changed = False
+        def insert_print_block(
+            candidate_content: str,
+            signature_pattern: str,
+            anchor_patterns: list[str],
+            missing_anchor_reason: str,
+        ) -> tuple[str, bool, bool]:
+            function_range = self._find_function_body_regex(candidate_content, signature_pattern)
+            if function_range is None:
+                return candidate_content, False, False
 
-        if not has_print_block:
+            function_body = candidate_content[function_range[0]:function_range[1]]
+            if self._contains_in_order(function_body, print_markers):
+                return candidate_content, False, True
+
             print_block = (
                 "\n"
                 '  std::cout << "\\nStart SharedFunctionInfo\\n";\n'
@@ -194,27 +204,79 @@ class SemanticPatcher:
                 '  std::cout << "\\nEnd SharedFunctionInfo\\n";\n'
                 '  std::cout << std::flush;\n'
             )
-            anchor_patterns = [
-                r"(^\s*BaselineBatchCompileIfSparkplugCompiled\s*\(\s*isolate\s*,)",
-                r"(^\s*script->set_deserialized\s*\(\s*true\s*\);\s*$)",
-                r"(^\s*FinalizeDeserialization\s*\(.*$)",
-            ]
-            next_content = updated_content
+
+            next_body = function_body
             for anchor_pattern in anchor_patterns:
-                next_content = re.sub(
+                replaced_body = re.sub(
                     anchor_pattern,
                     lambda match: print_block + match.group(1),
-                    updated_content,
+                    next_body,
                     count=1,
                     flags=re.MULTILINE,
                 )
-                if next_content != updated_content:
-                    break
-            if next_content == updated_content:
-                self.log("[SEMANTIC][code-serializer.cc] reason=print_anchor_not_found")
+                if replaced_body != next_body:
+                    updated_content = (
+                        candidate_content[:function_range[0]]
+                        + replaced_body
+                        + candidate_content[function_range[1]:]
+                    )
+                    updated_range = self._find_function_body_regex(updated_content, signature_pattern)
+                    if updated_range is None:
+                        return updated_content, True, False
+                    updated_body = updated_content[updated_range[0]:updated_range[1]]
+                    return (
+                        updated_content,
+                        True,
+                        self._contains_in_order(updated_body, print_markers),
+                    )
+
+            self.log(f"[SEMANTIC][code-serializer.cc] reason={missing_anchor_reason}")
+            return candidate_content, False, False
+
+        has_deserialize_print_block = function_has_print_block(content, deserialize_signature)
+        has_finish_print_block = function_has_print_block(content, finish_signature)
+        has_sanity_override = "return SerializedCodeSanityCheckResult::kSuccess;" in content
+        target_reached = (
+            has_deserialize_print_block
+            and has_sanity_override
+            and (has_finish_print_block is None or has_finish_print_block)
+        )
+
+        if self.verify_only:
+            return "already_target_state" if target_reached else "not_matched_unverified"
+
+        updated_content = content
+        changed = False
+
+        if not has_deserialize_print_block:
+            updated_content, inserted, success = insert_print_block(
+                updated_content,
+                deserialize_signature,
+                [
+                    r"(^\s*BaselineBatchCompileIfSparkplugCompiled\s*\(\s*isolate\s*,)",
+                    r"(^\s*script->set_deserialized\s*\(\s*true\s*\);\s*$)",
+                    r"(^\s*FinalizeDeserialization\s*\(.*$)",
+                ],
+                "deserialize_print_anchor_not_found",
+            )
+            if not success:
                 return "not_matched_unverified"
-            updated_content = next_content
-            changed = True
+            changed = changed or inserted
+
+        if has_finish_print_block is False:
+            updated_content, inserted, success = insert_print_block(
+                updated_content,
+                finish_signature,
+                [
+                    r"(^\s*DCHECK\s*\(\s*!off_thread_data\.background_merge_task_has_pending_foreground_work.*$)",
+                    r"(^\s*return\s+scope\.CloseAndEscape\s*\(\s*result\s*\)\s*;\s*$)",
+                    r"(^\s*FinalizeDeserialization\s*\(.*$)",
+                ],
+                "finish_print_anchor_not_found",
+            )
+            if not success:
+                return "not_matched_unverified"
+            changed = changed or inserted
 
         sanity_pattern = (
             r"(SerializedCodeSanityCheckResult\s+SerializedCodeData::SanityCheck\s*"
@@ -244,16 +306,12 @@ class SemanticPatcher:
         updated = self._read_file(file_path)
         if updated is None:
             return "failed"
-        updated_range = self._find_function_body_regex(
-            updated,
-            r"CodeSerializer::Deserialize\s*\(",
-        )
-        if updated_range is None:
-            return "failed"
-        updated_body = updated[updated_range[0]:updated_range[1]]
+        updated_deserialize = function_has_print_block(updated, deserialize_signature)
+        updated_finish = function_has_print_block(updated, finish_signature)
         success = (
-            self._contains_in_order(updated_body, print_markers)
+            updated_deserialize
             and "return SerializedCodeSanityCheckResult::kSuccess;" in updated
+            and (updated_finish is None or updated_finish)
         )
         return "applied_now" if success else "failed"
 
@@ -407,70 +465,12 @@ class SemanticPatcher:
         if content is None:
             return "failed"
 
-        signature_pattern = r"BackgroundDeserializeTask::Finish\s*\("
-        body_range = self._find_function_body_regex(content, signature_pattern, flags=re.MULTILINE)
-        if body_range is None:
+        if "BackgroundDeserializeTask::Finish" not in content:
             self.log("[SEMANTIC][compiler.cc] reason=finish_signature_not_found")
             return "not_matched_unverified"
 
-        body = content[body_range[0]:body_range[1]]
-        print_markers = [
-            "maybe_result = CodeSerializer::FinishOffThreadDeserialize(",
-            'std::cout << "\\nStart SharedFunctionInfo\\n";',
-            'result->SharedFunctionInfoPrint(std::cout);',
-            'std::cout << "\\nEnd SharedFunctionInfo\\n";',
-            'std::cout << std::flush;',
-            "return maybe_result;",
-        ]
-        if self.verify_only:
-            return "already_target_state" if self._contains_in_order(body, print_markers) else "not_matched_unverified"
-
-        if self._contains_in_order(body, print_markers):
-            return "already_target_state"
-
-        direct_return_pattern = (
-            r"(?P<indent>\s*)return\s+CodeSerializer::FinishOffThreadDeserialize\("
-            r"(?P<call_body>[\s\S]*?)"
-            r"(?P<closing>\);)"
-        )
-
-        def replace_finish_return(match: re.Match[str]) -> str:
-            indent = match.group("indent")
-            call_body = match.group("call_body")
-            return (
-                f"{indent}auto maybe_result = CodeSerializer::FinishOffThreadDeserialize({call_body}{match.group('closing')}\n"
-                f"{indent}DirectHandle<SharedFunctionInfo> result;\n"
-                f"{indent}if (maybe_result.ToHandle(&result)) {{\n"
-                f"{indent}  std::cout << \"\\nStart SharedFunctionInfo\\n\";\n"
-                f"{indent}  result->SharedFunctionInfoPrint(std::cout);\n"
-                f"{indent}  std::cout << \"\\nEnd SharedFunctionInfo\\n\";\n"
-                f"{indent}  std::cout << std::flush;\n"
-                f"{indent}}}\n"
-                f"{indent}return maybe_result;"
-            )
-
-        updated_content = re.sub(
-            direct_return_pattern,
-            replace_finish_return,
-            content,
-            count=1,
-            flags=re.MULTILINE,
-        )
-        if updated_content == content:
-            self.log("[SEMANTIC][compiler.cc] reason=finish_return_anchor_not_found")
-            return "not_matched_unverified"
-
-        if not self._write_file(file_path, updated_content):
-            return "failed"
-
-        updated = self._read_file(file_path)
-        if updated is None:
-            return "failed"
-        updated_range = self._find_function_body_regex(updated, signature_pattern, flags=re.MULTILINE)
-        if updated_range is None:
-            return "failed"
-        updated_body = updated[updated_range[0]:updated_range[1]]
-        return "applied_now" if self._contains_in_order(updated_body, print_markers) else "failed"
+        self.log("[SEMANTIC][compiler.cc] reason=disabled_use_code_serializer_finish_path")
+        return "not_matched_unverified"
 
     def patch_objects_cc(self) -> str:
         candidate_files = [

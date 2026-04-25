@@ -19,7 +19,7 @@ index 5b546e29926..45d7b50b7f5 100644
 +  os << "\nEnd BytecodeArray\n";
 +  os << std::flush;
  }
-
+ 
  void JSGlobalProxy::JSGlobalProxyPrint(std::ostream& os) {
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
 index 559160358c1..420b3da2b66 100644
@@ -84,7 +84,7 @@ index cd134f84055..285d55fda5e 100644
 @@ -477,13 +477,6 @@ void String::StringShortPrint(StringStream* accumulator) {
    accumulator->Add("<String[%u]: ", len);
    accumulator->Add(PrefixForDebugPrint());
-
+ 
 -  if (len > kMaxShortPrintLength) {
 -    accumulator->Add("...<truncated>>");
 -    accumulator->Add(SuffixForDebugPrint());
@@ -113,7 +113,7 @@ index 3f380e6a2ff..1f55cb9009a 100644
                                            Script::cast(result->script()));
    if (FLAG_profile_deserialization) {
 @@ -651,9 +657,7 @@ SerializedCodeData::SerializedCodeData(const std::vector<byte>* payload,
-
+ 
  SerializedCodeSanityCheckResult SerializedCodeData::SanityCheck(
      uint32_t expected_source_hash) const {
 -  SerializedCodeSanityCheckResult result = SanityCheckWithoutSource();
@@ -121,7 +121,7 @@ index 3f380e6a2ff..1f55cb9009a 100644
 -  return SanityCheckJustSource(expected_source_hash);
 +  return SerializedCodeSanityCheckResult::kSuccess;
  }
-
+ 
  SerializedCodeSanityCheckResult SerializedCodeData::SanityCheckJustSource(
 diff --git a/src/snapshot/deserializer.cc b/src/snapshot/deserializer.cc
 index 09fffbbed37..8ce3b2680ef 100644
@@ -133,5 +133,5 @@ index 09fffbbed37..8ce3b2680ef 100644
  #endif  // DEBUG
 -  CHECK_EQ(magic_number_, SerializedData::kMagicNumber);
  }
-
+ 
  template <typename IsolateT>
