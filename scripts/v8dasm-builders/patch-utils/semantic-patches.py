@@ -236,11 +236,8 @@ class SemanticPatcher:
         has_deserialize_print_block = function_has_print_block(content, deserialize_signature)
         has_finish_print_block = function_has_print_block(content, finish_signature)
         has_sanity_override = "return SerializedCodeSanityCheckResult::kSuccess;" in content
-        target_reached = (
-            has_deserialize_print_block
-            and has_sanity_override
-            and (has_finish_print_block is None or has_finish_print_block)
-        )
+        finish_path_supported = has_finish_print_block is not None
+        target_reached = has_deserialize_print_block and has_sanity_override
 
         if self.verify_only:
             return "already_target_state" if target_reached else "not_matched_unverified"
@@ -274,9 +271,10 @@ class SemanticPatcher:
                 ],
                 "finish_print_anchor_not_found",
             )
-            if not success:
-                return "not_matched_unverified"
-            changed = changed or inserted
+            if success:
+                changed = changed or inserted
+            elif finish_path_supported:
+                self.log("[SEMANTIC][code-serializer.cc] optional_finish_print_block_skipped=true")
 
         sanity_pattern = (
             r"(SerializedCodeSanityCheckResult\s+SerializedCodeData::SanityCheck\s*"
@@ -308,11 +306,8 @@ class SemanticPatcher:
             return "failed"
         updated_deserialize = function_has_print_block(updated, deserialize_signature)
         updated_finish = function_has_print_block(updated, finish_signature)
-        success = (
-            updated_deserialize
-            and "return SerializedCodeSanityCheckResult::kSuccess;" in updated
-            and (updated_finish is None or updated_finish)
-        )
+        updated_finish_supported = updated_finish is not None
+        success = updated_deserialize and "return SerializedCodeSanityCheckResult::kSuccess;" in updated
         return "applied_now" if success else "failed"
 
     def patch_objects_printer_cc(self) -> str:
