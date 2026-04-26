@@ -465,12 +465,75 @@ class SemanticPatcher:
         if content is None:
             return "failed"
 
-        if "BackgroundDeserializeTask::Finish" not in content:
-            self.log("[SEMANTIC][compiler.cc] reason=finish_signature_not_found")
+        signature_pattern = r"BackgroundDeserializeTask::Finish\s*\([^)]*\)\s*\{"
+        body_range = self._find_function_body_regex(content, signature_pattern, flags=re.MULTILINE)
+        if body_range is None:
+            if "BackgroundDeserializeTask::Finish" not in content:
+                self.log("[SEMANTIC][compiler.cc] reason=finish_signature_not_found")
+            else:
+                self.log("[SEMANTIC][compiler.cc] reason=finish_body_not_found")
             return "not_matched_unverified"
 
-        self.log("[SEMANTIC][compiler.cc] reason=disabled_use_code_serializer_finish_path")
-        return "not_matched_unverified"
+        body = content[body_range[0]:body_range[1]]
+        print_markers = [
+            'std::cout << "\\nStart SharedFunctionInfo\\n";',
+            'result->SharedFunctionInfoPrint(std::cout);',
+            'std::cout << "\\nEnd SharedFunctionInfo\\n";',
+            'std::cout << std::flush;',
+        ]
+        has_print_block = self._contains_in_order(body, print_markers)
+
+        if self.verify_only:
+            return "already_target_state" if has_print_block else "not_matched_unverified"
+
+        if has_print_block:
+            return "already_target_state"
+
+        return_pattern = r"return\s+CodeSerializer::FinishOffThreadDeserialize\s*\((.*?)\)\s*;"
+        print_block = (
+            '  std::cout << "\\nStart SharedFunctionInfo\\n";\n'
+            '  result->SharedFunctionInfoPrint(std::cout);\n'
+            '  std::cout << "\\nEnd SharedFunctionInfo\\n";\n'
+            '  std::cout << std::flush;\n'
+        )
+
+        def replace_finish_call(match: re.Match[str]) -> str:
+            args = match.group(1).strip()
+            return (
+                "Handle<SharedFunctionInfo> result;\n"
+                "  if (!CodeSerializer::FinishOffThreadDeserialize(\n"
+                f"{args}\n"
+                "          ).ToHandle(&result)) {\n"
+                "    return MaybeHandle<SharedFunctionInfo>();\n"
+                "  }\n"
+                + print_block +
+                "  return result;"
+            )
+
+        updated_body = re.sub(
+            return_pattern,
+            replace_finish_call,
+            body,
+            count=1,
+            flags=re.MULTILINE | re.DOTALL,
+        )
+        if updated_body == body:
+            self.log("[SEMANTIC][compiler.cc] reason=finish_return_call_not_found")
+            return "not_matched_unverified"
+
+        updated_content = content[:body_range[0]] + updated_body + content[body_range[1]:]
+        if not self._write_file(file_path, updated_content):
+            return "failed"
+
+        updated = self._read_file(file_path)
+        if updated is None:
+            return "failed"
+
+        updated_range = self._find_function_body_regex(updated, signature_pattern, flags=re.MULTILINE)
+        if updated_range is None:
+            return "failed"
+        updated_body = updated[updated_range[0]:updated_range[1]]
+        return "applied_now" if self._contains_in_order(updated_body, print_markers) else "failed"
 
     def patch_objects_cc(self) -> str:
         candidate_files = [
