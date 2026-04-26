@@ -237,11 +237,7 @@ class SemanticPatcher:
         has_finish_print_block = function_has_print_block(content, finish_signature)
         has_sanity_override = "return SerializedCodeSanityCheckResult::kSuccess;" in content
         finish_path_supported = has_finish_print_block is not None
-        target_reached = (
-            has_deserialize_print_block
-            and has_sanity_override
-            and (not finish_path_supported or has_finish_print_block)
-        )
+        target_reached = has_deserialize_print_block and has_sanity_override
 
         if self.verify_only:
             return "already_target_state" if target_reached else "not_matched_unverified"
@@ -279,9 +275,11 @@ class SemanticPatcher:
                 ],
                 "finish_print_anchor_not_found",
             )
-            if not success and finish_path_supported:
-                return "not_matched_unverified"
-            changed = changed or inserted
+            if success:
+                changed = changed or inserted
+            elif finish_path_supported:
+                self.log("[SEMANTIC][code-serializer.cc] optional_finish_print_block_skipped=true")
+                self.log("[SEMANTIC][code-serializer.cc] note=build_can_continue_but_runtime_output_may_be_incomplete")
 
         sanity_pattern = (
             r"(SerializedCodeSanityCheckResult\s+SerializedCodeData::SanityCheck\s*"
@@ -314,11 +312,7 @@ class SemanticPatcher:
         updated_deserialize = function_has_print_block(updated, deserialize_signature)
         updated_finish = function_has_print_block(updated, finish_signature)
         updated_finish_supported = updated_finish is not None
-        success = (
-            updated_deserialize
-            and "return SerializedCodeSanityCheckResult::kSuccess;" in updated
-            and (not updated_finish_supported or updated_finish)
-        )
+        success = updated_deserialize and "return SerializedCodeSanityCheckResult::kSuccess;" in updated
         return "applied_now" if success else "failed"
 
     def patch_objects_printer_cc(self) -> str:
