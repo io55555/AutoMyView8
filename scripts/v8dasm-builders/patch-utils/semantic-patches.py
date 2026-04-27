@@ -499,6 +499,17 @@ class SemanticPatcher:
 
         def replace_finish_call(match: re.Match[str]) -> str:
             args = match.group(1).strip()
+            if "&result" in args:
+                return (
+                    "Handle<SharedFunctionInfo> result;\n"
+                    "  if (!CodeSerializer::FinishOffThreadDeserialize(\n"
+                    f"{args}\n"
+                    "          )) {\n"
+                    "    return MaybeHandle<SharedFunctionInfo>();\n"
+                    "  }\n"
+                    + print_block +
+                    "  return result;"
+                )
             return (
                 "Handle<SharedFunctionInfo> result;\n"
                 "  if (!CodeSerializer::FinishOffThreadDeserialize(\n"
