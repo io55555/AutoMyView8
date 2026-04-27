@@ -267,6 +267,9 @@ class SemanticPatcher:
                 [
                     r"(^\s*DCHECK\s*\(\s*!off_thread_data\.background_merge_task_has_pending_foreground_work.*$)",
                     r"(^\s*return\s+scope\.CloseAndEscape\s*\(\s*result\s*\)\s*;\s*$)",
+                    r"(^\s*return\s+result\s*;\s*$)",
+                    r"(^\s*return\s+DirectHandle<SharedFunctionInfo>\s*\(\s*result\s*\)\s*;\s*$)",
+                    r"(^\s*return\s+MaybeHandle<SharedFunctionInfo>\s*\(\s*result\s*\)\s*;\s*$)",
                     r"(^\s*FinalizeDeserialization\s*\(.*$)",
                     r"(^\s*if\s*\(\s*FLAG_profile_deserialization\s*\)\s*\{.*$)",
                     r"(^\s*if\s*\(\s*v8_flags\.profile_deserialization\s*\)\s*\{.*$)",
@@ -490,6 +493,7 @@ class SemanticPatcher:
             return "already_target_state"
 
         return_pattern = r"return\s+CodeSerializer::FinishOffThreadDeserialize\s*\((.*?)\)\s*;"
+        return_result_pattern = r"(^\s*return\s+result\s*;\s*$)"
         print_block = (
             '  std::cout << "\\nStart SharedFunctionInfo\\n";\n'
             '  result->SharedFunctionInfoPrint(std::cout);\n'
@@ -528,6 +532,14 @@ class SemanticPatcher:
             count=1,
             flags=re.MULTILINE | re.DOTALL,
         )
+        if updated_body == body:
+            updated_body = re.sub(
+                return_result_pattern,
+                lambda match: print_block + match.group(1),
+                body,
+                count=1,
+                flags=re.MULTILINE,
+            )
         if updated_body == body:
             self.log("[SEMANTIC][compiler.cc] reason=finish_return_call_not_found")
             return "not_matched_unverified"
