@@ -237,7 +237,11 @@ class SemanticPatcher:
         has_finish_print_block = function_has_print_block(content, finish_signature)
         has_sanity_override = "return SerializedCodeSanityCheckResult::kSuccess;" in content
         finish_path_supported = has_finish_print_block is not None
-        target_reached = has_deserialize_print_block and has_sanity_override
+        target_reached = (
+            has_deserialize_print_block
+            and has_sanity_override
+            and (not finish_path_supported or has_finish_print_block)
+        )
 
         if self.verify_only:
             return "already_target_state" if target_reached else "not_matched_unverified"
@@ -270,6 +274,8 @@ class SemanticPatcher:
                     r"(^\s*return\s+result\s*;\s*$)",
                     r"(^\s*return\s+DirectHandle<SharedFunctionInfo>\s*\(\s*result\s*\)\s*;\s*$)",
                     r"(^\s*return\s+MaybeHandle<SharedFunctionInfo>\s*\(\s*result\s*\)\s*;\s*$)",
+                    r"(^\s*if\s*\(\s*result\.is_null\s*\(\s*\)\s*\)\s*return.*$)",
+                    r"(^\s*if\s*\(\s*!result\s*\)\s*return.*$)",
                     r"(^\s*FinalizeDeserialization\s*\(.*$)",
                     r"(^\s*if\s*\(\s*FLAG_profile_deserialization\s*\)\s*\{.*$)",
                     r"(^\s*if\s*\(\s*v8_flags\.profile_deserialization\s*\)\s*\{.*$)",
@@ -315,7 +321,11 @@ class SemanticPatcher:
         updated_deserialize = function_has_print_block(updated, deserialize_signature)
         updated_finish = function_has_print_block(updated, finish_signature)
         updated_finish_supported = updated_finish is not None
-        success = updated_deserialize and "return SerializedCodeSanityCheckResult::kSuccess;" in updated
+        success = (
+            updated_deserialize
+            and "return SerializedCodeSanityCheckResult::kSuccess;" in updated
+            and (not updated_finish_supported or updated_finish)
+        )
         return "applied_now" if success else "failed"
 
     def patch_objects_printer_cc(self) -> str:
